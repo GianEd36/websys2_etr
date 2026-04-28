@@ -8,12 +8,32 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
+use App\Models\User;
+use App\Models\Review;
 
 class ProfileController extends Controller
 {
     /**
      * Display the user's profile form.
      */
+    public function show($id)
+    {
+        $user = User::findOrFail($id);
+        
+        // Fetch user's reviews with movie details
+        $reviews = Review::where('user_id', $id)
+            ->latest()
+            ->get();
+
+        // Calculate some fun stats
+        $stats = [
+            'total_reviews' => $reviews->count(),
+            'avg_rating' => number_format($reviews->avg('rating'), 1),
+            'member_since' => $user->created_at->format('M Y'),
+        ];
+
+        return view('profile.show', compact('user', 'reviews', 'stats'));
+    }
     public function edit(Request $request): View
     {
         return view('profile.edit', [

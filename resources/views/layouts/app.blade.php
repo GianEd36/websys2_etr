@@ -73,6 +73,9 @@
                                 {{ Auth::user()->name }}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end shadow">
+                                {{-- Add this line below --}}
+                                <li><a class="dropdown-item" href="{{ route('profile.show', Auth::user()->id) }}">Profile</a></li>
+                                
                                 <li><a class="dropdown-item" href="{{ route('dashboard') }}">My Reviews</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
