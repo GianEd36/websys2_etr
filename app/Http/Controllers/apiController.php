@@ -77,19 +77,23 @@ class apiController extends Controller
             'totalPages' => $data['total_pages']
         ]);
     }
-    public function showDetails($id) {
-        $token = config('services.tmdb.token');
+    public function showDetails($id)
+    {
+        $movie = Http::withToken(config('services.tmdb.token'))
+            ->get("https://api.themoviedb.org/3/movie/{$id}")
+            ->json();
 
-        // Fetch TMDB data
-        $movie = Http::withToken($token)->get("https://api.themoviedb.org/3/movie/{$id}")->json();
+        $reviews = \App\Models\Review::where('movie_id', $id)
+            ->with(['user', 'replies.user', 'replies.replies']) // Tell Laravel to dig deeper
+            ->whereNull('parent_id') // Get only top-level reviews first
+            ->latest()
+            ->get();
 
-        // Fetch local reviews
-        $localReviews = Review::where('movie_id', $id)->latest()->get();
+        // Re-calculate the average rating from your database reviews
+        $averageRating = $reviews->avg('rating');
 
-        // Calculate Average (returns null if no reviews yet)
-        $averageRating = Review::where('movie_id', $id)->avg('rating');
-
-        return view('details', compact('movie', 'localReviews', 'averageRating'));
+        // Pass both $reviews and $averageRating to the view
+        return view('details', compact('movie', 'reviews', 'averageRating'));
     }
     public function storeReview(Request $request, $id) {
         $request->validate([

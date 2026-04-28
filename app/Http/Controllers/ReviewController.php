@@ -70,4 +70,21 @@ class ReviewController extends Controller
 
         return back()->with('success', 'Review deleted successfully!');
     }
+    public function reply(Request $request, Review $review)
+    {
+        $request->validate([
+            'comment' => 'required|max:255',
+        ]);
+
+        Review::create([
+            'user_id' => auth()->id(),
+            'parent_id' => $review->id,
+            'movie_id' => $review->movie_id, // Keep it linked to the same movie
+            'movie_title' => $review->movie_title,
+            'comment' => $request->comment,
+            'rating' => null, // No rating for replies
+        ]);
+
+        return back()->with('success', 'Reply posted!');
+    }
 }

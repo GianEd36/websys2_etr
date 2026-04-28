@@ -3,23 +3,20 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Review extends Model
 {
-    //
-    protected $fillable = [
-        'movie_id', 
-        'user_id',
-        'user_name', 
-        'rating', 
-        'comment', 
-        'movie_title',
-        'movie_poster'
-    ];
+    protected $fillable = ['user_id', 'parent_id', 'movie_id', 'movie_title', 'rating', 'comment', 'movie_poster'];
 
-    public function user(): BelongsTo
-    {
+    public function user() {
         return $this->belongsTo(User::class);
+    }
+
+    public function parent() {
+        return $this->belongsTo(Review::class, 'parent_id');
+    }
+
+    public function replies() {
+        return $this->hasMany(Review::class, 'parent_id')->latest();
     }
 }

@@ -16,19 +16,18 @@ class ProfileController extends Controller
     /**
      * Display the user's profile form.
      */
-    public function show($id)
+    public function show()
     {
-        $user = User::findOrFail($id);
+        $user = auth()->user();
         
-        // Fetch user's reviews with movie details
-        $reviews = Review::where('user_id', $id)
-            ->latest()
-            ->get();
+        // Using your existing Review model logic
+        $reviews = \App\Models\Review::where('user_id', $user->id)
+                    ->latest()
+                    ->get();
 
-        // Calculate some fun stats
         $stats = [
             'total_reviews' => $reviews->count(),
-            'avg_rating' => number_format($reviews->avg('rating'), 1),
+            'avg_rating' => $reviews->count() > 0 ? number_format($reviews->avg('rating'), 1) : '0.0',
             'member_since' => $user->created_at->format('M Y'),
         ];
 

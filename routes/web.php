@@ -20,7 +20,8 @@ Route::middleware('auth')->group(function () {
     //Needed this for the user account ReviewController
     Route::post('/movie/{id}/review', [ReviewController::class, 'store'])->name('reviews.store');
     Route::delete('/reviews/{review}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
-
+    //Reply
+    Route::post('/reviews/{review}/reply', [ReviewController::class, 'reply'])->name('reviews.reply');
 
     //Breeze provided routing are these
     Route::get('/dashboard', [DashboardController::class, 'index'])

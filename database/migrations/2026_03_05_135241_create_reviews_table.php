@@ -13,7 +13,6 @@ return new class extends Migration
         Schema::create('reviews', function (Blueprint $table) {
             $table->id();
             $table->integer('movie_id'); // TMDB ID
-            $table->string('user_name');
             $table->integer('rating');   // 1 - 10
             $table->text('comment');
             $table->timestamps();
