@@ -82,7 +82,7 @@
                                     <form action="{{ route('reviews.reply', $review->id) }}" method="POST" class="bg-light p-3 rounded">
                                         @csrf
                                         <div class="input-group">
-                                            <input type="text" name="comment" class="form-control" placeholder="What did they get right/wrong?" required>
+                                            <input type="text" name="comment" class="form-control" placeholder="What did they get right/wrong?">
                                             <button class="btn btn-primary" type="submit">Post</button>
                                         </div>
                                     </form>

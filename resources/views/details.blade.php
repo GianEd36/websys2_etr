@@ -39,11 +39,11 @@
                         
                         <div class="mb-3">
                             <label class="small text-muted text-uppercase fw-bold">Rating (1-10)</label>
-                            <input type="number" name="rating" class="form-control bg-dark text-white border-secondary w-25" min="1" max="10" required>
+                            <input type="number" name="rating" class="form-control bg-dark text-white border-secondary w-25" min="1" max="10">
                         </div>
                         <div class="mb-3">
                             <label class="small text-muted text-uppercase fw-bold">Your Comment</label>
-                            <textarea name="comment" class="form-control bg-dark text-white border-secondary" rows="3" placeholder="Share your thoughts..." required></textarea>
+                            <textarea name="comment" class="form-control bg-dark text-white border-secondary" rows="3" placeholder="Share your thoughts..."></textarea>
                         </div>
                         <button type="submit" class="btn btn-primary w-100 fw-bold">Post Review</button>
                     </form>
@@ -89,7 +89,7 @@
                             <form action="{{ route('reviews.reply', $review->id) }}" method="POST">
                                 @csrf
                                 <div class="input-group">
-                                    <input type="text" name="comment" class="form-control bg-dark text-white border-secondary" placeholder="Add a comment..." required>
+                                    <input type="text" name="comment" class="form-control bg-dark text-white border-secondary" placeholder="Add a comment...">
                                     <button class="btn btn-primary" type="submit">Post</button>
                                 </div>
                             </form>
