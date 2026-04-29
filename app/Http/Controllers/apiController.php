@@ -84,12 +84,12 @@ class apiController extends Controller
             ->json();
 
         $reviews = \App\Models\Review::where('movie_id', $id)
-            ->with(['user', 'replies.user', 'replies.replies']) // Tell Laravel to dig deeper
-            ->whereNull('parent_id') // Get only top-level reviews first
+            ->with(['user', 'replies.user', 'replies.replies'])
+            ->whereNull('parent_id')
             ->latest()
             ->get();
 
-        // Re-calculate the average rating from your database reviews
+        // Re-calculate the average rating from database reviews
         $averageRating = $reviews->avg('rating');
 
         // Pass both $reviews and $averageRating to the view
