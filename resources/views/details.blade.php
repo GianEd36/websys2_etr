@@ -14,6 +14,10 @@
         <div class="col-md-8">
             <div class="d-flex align-items-center gap-3 mb-2">
                 <h1 class="fw-bold mb-0">{{ $movie['title'] }}</h1>
+                <div class="d-flex align-items-center gap-3 text-muted small">
+                    <span><i class="fas fa-eye me-1"></i> {{ number_format($viewCount) }} Views</span>
+                    <span><i class="fas fa-star text-warning me-1"></i> {{ number_format($averageRating, 1) }} / 10</span>
+                </div>
                 @if(isset($averageRating) && $averageRating > 0)
                     <span class="badge bg-primary fs-5 shadow-sm">
                         <i class="fas fa-star text-warning me-1"></i> {{ number_format($averageRating, 1) }}
@@ -100,13 +104,24 @@
 
                         <!-- Interaction Bar -->
                         <div class="d-flex align-items-center gap-3 mt-2">
-                            <form action="{{ route('reviews.upvote', $review->id) }}" method="POST">
-                                @csrf
-                                <button type="submit" class="btn btn-sm btn-outline-primary border-0 p-0">
-                                    <i class="fas fa-arrow-up"></i> 
-                                    <span class="ms-1">{{ $review->upvotes }}</span>
-                                </button>
-                            </form>
+                            <!-- Unified Upvote -->
+                                <form action="{{ route('reviews.vote', $review->id) }}" method="POST" class="vote-form d-inline">
+                                    @csrf
+                                    <input type="hidden" name="type" value="up">
+                                    <button type="submit" class="btn btn-sm p-0 border-0 text-muted">
+                                        <i class="fas fa-arrow-up {{ $review->votes->where('user_id', auth()->id())->where('type', 'up')->count() ? 'text-primary' : '' }}"></i> 
+                                        <small id="upvotes-count-{{ $review->id }}">{{ $review->upvotes }}</small>
+                                    </button>
+                                </form>
+
+                                <form action="{{ route('reviews.vote', $review->id) }}" method="POST" class="vote-form d-inline">
+                                    @csrf
+                                    <input type="hidden" name="type" value="down">
+                                    <button type="submit" class="btn btn-sm p-0 border-0 text-muted">
+                                        <i class="fas fa-arrow-down {{ $review->votes->where('user_id', auth()->id())->where('type', 'down')->count() ? 'text-danger' : '' }}"></i> 
+                                        <small id="downvotes-count-{{ $review->id }}">{{ $review->downvotes }}</small>
+                                    </button>
+                                </form>
 
                             <button class="btn btn-sm btn-link text-decoration-none p-0 text-muted" type="button" data-bs-toggle="collapse" data-bs-target="#replyForm{{ $review->id }}">
                                 <i class="fas fa-reply me-1"></i> Reply
@@ -148,3 +163,52 @@
     .x-small { font-size: 0.75rem; }
 </style>
 @endsection
+<!-- The upvotes downvotes script -->
+<script>
+document.addEventListener('submit', function(e) {
+    if (e.target && e.target.classList.contains('vote-form')) {
+        e.preventDefault();
+
+        const form = e.target;
+        const url = form.action;
+        const formData = new FormData(form);
+        const type = formData.get('type'); // 'up' or 'down'
+        
+        const urlParts = url.split('/');
+        const reviewId = urlParts[urlParts.length - 2]; 
+
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // 1. Update the numbers
+                const upLabel = document.getElementById(`upvotes-count-${reviewId}`);
+                const downLabel = document.getElementById(`downvotes-count-${reviewId}`);
+                if(upLabel) upLabel.innerText = data.upvotes;
+                if(downLabel) downLabel.innerText = data.downvotes;
+
+                // 2. Handle Icon Colors
+                // Find both forms for this specific review/reply
+                const parentContainer = form.closest('.d-flex');
+                const upIcon = parentContainer.querySelector('input[value="up"]').parentElement.querySelector('i');
+                const downIcon = parentContainer.querySelector('input[value="down"]').parentElement.querySelector('i');
+
+                if (type === 'up') {
+                    // Toggle blue for upvote, ensure downvote is gray
+                    upIcon.classList.toggle('text-primary');
+                    downIcon.classList.remove('text-danger');
+                } else {
+                    // Toggle red for downvote, ensure upvote is gray
+                    downIcon.classList.toggle('text-danger');
+                    upIcon.classList.remove('text-primary');
+                }
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+});
+</script>

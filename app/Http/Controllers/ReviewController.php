@@ -14,8 +14,9 @@ class ReviewController extends Controller
     {
         // Checks if critique already exist for the user
         $exists = Review::where('movie_id', $id)
-                        ->where('user_id', auth()->id())
-                        ->exists();
+                            ->where('user_id', auth()->id())
+                            ->whereNull('parent_id') // <--- Add this constraint
+                            ->exists();
 
         if ($exists) {
             return back()->withErrors(['message' => 'You have already critiqued this movie!']);
@@ -55,6 +56,7 @@ class ReviewController extends Controller
             'comment' => $request->comment,
             'movie_title' => $movieData['title'] ?? 'Unknown Movie',
             'movie_poster' => $movieData['poster_path'] ?? null,
+            'parent_id' => null, // Explicitly set as null for main critiques
         ]);
 
         return redirect()->route('movie.details', $id)->with('success', 'Your critique has been published!');
@@ -121,6 +123,14 @@ class ReviewController extends Controller
             ]);
             $review->increment($type === 'up' ? 'upvotes' : 'downvotes');
         }
+
+        if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'upvotes' => $review->upvotes,
+                    'downvotes' => $review->downvotes,
+                    'status' => 'success'
+                ]);
+            }
 
         return back();
     }

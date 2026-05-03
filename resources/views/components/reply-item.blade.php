@@ -1,39 +1,43 @@
 @props(['reply'])
 
 <div class="ms-4 mt-3 ps-3 border-start border-secondary">
-    <div class="d-flex align-items-center gap-2 mt-1">
+    <!-- Add this Header Section -->
+    <div class="mb-1">
+        <span class="fw-bold text-info small">{{ $reply->user->name }}</span>
+        <span class="text-muted x-small ms-2">{{ $reply->created_at->diffForHumans() }}</span>
+    </div>
+
+    <p class="small mb-1 text-white">{{ $reply->comment }}</p>
+
+    <div class="d-flex align-items-center gap-3 mt-1">
         <!-- Upvote -->
-        <form action="{{ route('reviews.vote', $reply->id) }}" method="POST">
+        <!-- Example for the Upvote Form -->
+        <form action="{{ route('reviews.vote', $reply->id) }}" method="POST" class="vote-form d-inline">
             @csrf
             <input type="hidden" name="type" value="up">
             <button type="submit" class="btn btn-sm p-0 border-0 text-muted">
                 <i class="fas fa-arrow-up {{ $reply->votes->where('user_id', auth()->id())->where('type', 'up')->count() ? 'text-primary' : '' }}"></i> 
-                <small>{{ $reply->upvotes }}</small>
+                <!-- Add an ID to this small tag -->
+                <small id="upvotes-count-{{ $reply->id }}">{{ $reply->upvotes }}</small>
             </button>
         </form>
 
-        <!-- Downvote -->
-        <form action="{{ route('reviews.vote', $reply->id) }}" method="POST">
+        <!-- Do the same for Downvote -->
+        <form action="{{ route('reviews.vote', $reply->id) }}" method="POST" class="vote-form d-inline">
             @csrf
             <input type="hidden" name="type" value="down">
             <button type="submit" class="btn btn-sm p-0 border-0 text-muted">
                 <i class="fas fa-arrow-down {{ $reply->votes->where('user_id', auth()->id())->where('type', 'down')->count() ? 'text-danger' : '' }}"></i> 
-                <small>{{ $reply->downvotes }}</small>
+                <small id="downvotes-count-{{ $reply->id }}">{{ $reply->downvotes }}</small>
             </button>
         </form>
 
+        <!-- Reply Button (Only need one) -->
         <button class="btn btn-sm btn-link text-decoration-none p-0 x-small text-muted" 
                 type="button" data-bs-toggle="collapse" data-bs-target="#replyForm{{ $reply->id }}">
-            Reply
+            <i class="fas fa-reply me-1"></i>Reply
         </button>
     </div>
-    <p class="small mb-1 opacity-75">{{ $reply->comment }}</p>
-
-    <!-- Reply Toggle -->
-    <button class="btn btn-sm btn-link text-decoration-none p-0 x-small text-muted" 
-            type="button" data-bs-toggle="collapse" data-bs-target="#replyForm{{ $reply->id }}">
-        Reply
-    </button>
 
     <!-- Nested Reply Form -->
     <div class="collapse mt-2" id="replyForm{{ $reply->id }}">
@@ -46,7 +50,7 @@
         </form>
     </div>
 
-    <!-- RECURSION: The reply calls itself for its own replies -->
+    <!-- RECURSION -->
     @if($reply->replies->count() > 0)
         @foreach($reply->replies as $nestedReply)
             <x-reply-item :reply="$nestedReply" />

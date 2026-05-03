@@ -11,6 +11,13 @@
         body { transition: background-color 0.3s, color 0.3s; }
         .movie-card img { transition: transform 0.2s; }
         .movie-card:hover img { transform: scale(1.03); }
+        .vote-form i {
+            transition: color 0.2s ease;
+            cursor: pointer;
+        }
+        .vote-form i:hover {
+            opacity: 0.8;
+        }
         /* This ensures links behave themselves in both modes */
         a { color: inherit; }
     </style>

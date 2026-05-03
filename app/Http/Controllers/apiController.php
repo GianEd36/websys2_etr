@@ -15,15 +15,33 @@ class apiController extends Controller
         $token = config('services.tmdb.token');
         $page = $request->get('page', 1);
 
-        // Fetch the genres list so the card loop can find the names
-        $genres = Http::withToken($token)
-            ->get("https://api.themoviedb.org/3/genre/movie/list")
-            ->json()['genres'] ?? [];
+        // Always fetch genres so the view doesn't crash
+        $genresResponse = Http::withToken($token)->get("https://api.themoviedb.org/3/genre/movie/list");
+        $genres = $genresResponse->json()['genres'] ?? [];
 
-        $response = Http::withToken($token)->get("https://api.themoviedb.org/3/movie/popular", [
-            'page' => $page,
-        ]);
+        // Our filter
+        $sortBy = $request->query('sort_by');
 
+        if ($sortBy === 'views') {
+                $popularIds = \App\Models\MovieView::orderBy('views', 'desc')->take(20)->pluck('movie_id');
+                
+                $movies = [];
+                foreach ($popularIds as $id) {
+                    $movieData = Http::withToken($token)->get("https://api.themoviedb.org/3/movie/{$id}")->json();
+                    if (isset($movieData['id'])) {
+                        $movies[] = $movieData;
+                    }
+                }
+
+                return view('homepage', [
+                    'movies' => $movies,
+                    'genres' => $genres,
+                    'currentPage' => 1,
+                    'totalPages' => 1
+                ]);
+        }
+
+        $response = Http::withToken($token)->get("https://api.themoviedb.org/3/movie/popular", ['page' => $page,]);
         $data = $response->json();
 
         return view('homepage', [
@@ -88,15 +106,20 @@ class apiController extends Controller
         $trailer = collect($movie['videos']['results'])->firstWhere('type', 'Trailer') 
            ?? collect($movie['videos']['results'])->first(); // Fallback to any video if no trailer
 
+        // Movie Views Logic
+        $viewRecord = \App\Models\MovieView::firstOrCreate(['movie_id' => $id]);
+        $viewRecord->increment('views');
+        $viewCount = $viewRecord->views; // Pass to the view
+
         $reviews = \App\Models\Review::where('movie_id', $id)
-            ->with(['user', 'replies.user', 'replies.replies']) 
+            ->with(['user', 'votes', 'replies.user', 'replies.votes', 'replies.replies.votes']) // Add 'votes' here
             ->whereNull('parent_id') 
             ->latest()
             ->get();
 
         $averageRating = $reviews->avg('rating');
 
-        return view('details', compact('movie', 'reviews', 'averageRating', 'trailer'));
+        return view('details', compact('movie', 'reviews', 'averageRating', 'trailer', 'viewCount'));
     }
     public function storeReview(Request $request, $id) {
         $request->validate([
