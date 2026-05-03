@@ -6,7 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 
 class Review extends Model
 {
-    protected $fillable = ['user_id', 'parent_id', 'movie_id', 'movie_title', 'rating', 'comment', 'movie_poster'];
+    protected $fillable = [
+        'user_id', 
+        'parent_id', 
+        'movie_id', 
+        'movie_title', 
+        'rating', 
+        'comment', 
+        'movie_poster',
+        'upvotes',
+        'downvotes'
+        ];
 
     public function user() {
         return $this->belongsTo(User::class);
@@ -18,5 +28,8 @@ class Review extends Model
 
     public function replies() {
         return $this->hasMany(Review::class, 'parent_id')->latest();
+    }
+    public function votes() {
+        return $this->hasMany(ReviewVote::class);
     }
 }

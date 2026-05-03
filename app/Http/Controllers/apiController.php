@@ -79,21 +79,24 @@ class apiController extends Controller
     }
     public function showDetails($id)
     {
+        // Fetch movie AND videos (trailers) in one go
         $movie = Http::withToken(config('services.tmdb.token'))
-            ->get("https://api.themoviedb.org/3/movie/{$id}")
+            ->get("https://api.themoviedb.org/3/movie/{$id}?append_to_response=videos")
             ->json();
 
+        // Find the YouTube Trailer from the results
+        $trailer = collect($movie['videos']['results'])->firstWhere('type', 'Trailer') 
+           ?? collect($movie['videos']['results'])->first(); // Fallback to any video if no trailer
+
         $reviews = \App\Models\Review::where('movie_id', $id)
-            ->with(['user', 'replies.user', 'replies.replies'])
-            ->whereNull('parent_id')
+            ->with(['user', 'replies.user', 'replies.replies']) 
+            ->whereNull('parent_id') 
             ->latest()
             ->get();
 
-        // Re-calculate the average rating from database reviews
         $averageRating = $reviews->avg('rating');
 
-        // Pass both $reviews and $averageRating to the view
-        return view('details', compact('movie', 'reviews', 'averageRating'));
+        return view('details', compact('movie', 'reviews', 'averageRating', 'trailer'));
     }
     public function storeReview(Request $request, $id) {
         $request->validate([

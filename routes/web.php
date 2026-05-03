@@ -22,6 +22,10 @@ Route::middleware('auth')->group(function () {
     Route::delete('/reviews/{review}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
     //Reply
     Route::post('/reviews/{review}/reply', [ReviewController::class, 'reply'])->name('reviews.reply');
+    //Upvotes
+    Route::post('/reviews/{review}/upvote', [ReviewController::class, 'upvote'])->name('reviews.upvote');
+    //Pivot Table that connects the user and the upvotes system tightly
+    Route::post('/reviews/{review}/vote', [ReviewController::class, 'vote'])->name('reviews.vote');
 
     //Breeze provided routing are these
     Route::get('/dashboard', [DashboardController::class, 'index'])

@@ -87,4 +87,41 @@ class ReviewController extends Controller
 
         return back()->with('success', 'Reply posted!');
     }
+    public function upvote(Review $review)
+    {
+        $review->increment('upvotes');
+        return back();
+    }
+    public function vote(Request $request, Review $review) {
+        $type = $request->type; // 'up' or 'down'
+        $userId = auth()->id();
+
+        // Check if user already voted
+        $existingVote = \App\Models\ReviewVote::where('user_id', $userId)
+            ->where('review_id', $review->id)
+            ->first();
+
+        if ($existingVote) {
+            if ($existingVote->type === $type) {
+                // If they click the same button again, remove the vote (toggle)
+                $existingVote->delete();
+                $review->decrement($type === 'up' ? 'upvotes' : 'downvotes');
+            } else {
+                // If they change from up to down, update the counts
+                $review->decrement($existingVote->type === 'up' ? 'upvotes' : 'downvotes');
+                $existingVote->update(['type' => $type]);
+                $review->increment($type === 'up' ? 'upvotes' : 'downvotes');
+            }
+        } else {
+            // New vote
+            \App\Models\ReviewVote::create([
+                'user_id' => $userId,
+                'review_id' => $review->id,
+                'type' => $type
+            ]);
+            $review->increment($type === 'up' ? 'upvotes' : 'downvotes');
+        }
+
+        return back();
+    }
 }

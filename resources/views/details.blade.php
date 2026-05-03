@@ -23,6 +23,27 @@
             <p class="text-muted fs-5">{{ $movie['tagline'] }}</p>
             <p class="mt-4">{{ $movie['overview'] }}</p>
             
+            @if($trailer)
+            <div class="mt-4">
+                <button type="button" class="btn btn-outline-danger fw-bold" data-bs-toggle="modal" data-bs-target="#trailerModal">
+                    <i class="fas fa-play me-2"></i> Watch Trailer
+                </button>
+            </div>
+
+            <!-- Trailer Modal -->
+            <div class="modal fade" id="trailerModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content bg-dark border-secondary">
+                        <div class="modal-body p-0">
+                            <div class="ratio ratio-16x9">
+                                <iframe src="https://www.youtube.com/embed/{{ $trailer['key'] }}" allowfullscreen></iframe>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
+
             <div class="mt-4">
                 <span class="text-muted">Release Date:</span> {{ $movie['release_date'] }}
             </div>
@@ -78,7 +99,15 @@
                         <p class="mt-3 fs-5 mb-3">"{{ $review->comment }}"</p>
 
                         <!-- Interaction Bar -->
-                        <div class="d-flex align-items-center gap-3">
+                        <div class="d-flex align-items-center gap-3 mt-2">
+                            <form action="{{ route('reviews.upvote', $review->id) }}" method="POST">
+                                @csrf
+                                <button type="submit" class="btn btn-sm btn-outline-primary border-0 p-0">
+                                    <i class="fas fa-arrow-up"></i> 
+                                    <span class="ms-1">{{ $review->upvotes }}</span>
+                                </button>
+                            </form>
+
                             <button class="btn btn-sm btn-link text-decoration-none p-0 text-muted" type="button" data-bs-toggle="collapse" data-bs-target="#replyForm{{ $review->id }}">
                                 <i class="fas fa-reply me-1"></i> Reply
                             </button>
