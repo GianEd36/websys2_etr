@@ -12,7 +12,8 @@ class Review extends Model
         'movie_id', 
         'movie_title', 
         'rating', 
-        'comment', 
+        'comment',
+        'image', 
         'movie_poster',
         'upvotes',
         'downvotes'

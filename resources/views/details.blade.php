@@ -57,7 +57,7 @@
             <div class="card bg-dark border-secondary mt-5 shadow">
                 <div class="card-body p-4">
                     <h5 class="fw-bold mb-3"><i class="fas fa-pen me-2 text-primary"></i> Write a Critique</h5>
-                    <form action="{{ route('reviews.store', $movie['id']) }}" method="POST">
+                    <form action="{{ route('reviews.store', $movie['id']) }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         <input type="hidden" name="movie_title" value="{{ $movie['title'] }}">
                         <input type="hidden" name="movie_poster" value="{{ $movie['poster_path'] }}">
@@ -66,9 +66,23 @@
                             <label class="small text-muted text-uppercase fw-bold">Rating (1-10)</label>
                             <input type="number" name="rating" class="form-control bg-dark text-white border-secondary w-25" min="1" max="10">
                         </div>
+                        <!-- ADDED: Image Upload Field -->
                         <div class="mb-3">
-                            <label class="small text-muted text-uppercase fw-bold">Your Comment</label>
-                            <textarea name="comment" class="form-control bg-dark text-white border-secondary" rows="3" placeholder="Share your thoughts..."></textarea>
+                            <label class="small text-muted text-uppercase fw-bold"><i class="fas fa-image me-1"></i> Attach a Photo (Optional)</label>
+                            <input type="file" name="image" class="form-control bg-dark text-white border-secondary">
+                            <div class="x-small text-muted mt-1">Supports JPG, PNG, WEBP (Max 2MB)</div>
+                        </div>
+                        <div class="mb-3 position-relative">
+                            <label class="small text-muted text-uppercase fw-bold d-flex justify-content-between">
+                                Your Comment
+                                <button type="button" id="emoji-trigger" class="btn btn-sm p-0 text-primary border-0">
+                                    <i class="far fa-smile fs-5"></i>
+                                </button>
+                            </label>
+                            <textarea id="critique-comment" name="comment" class="form-control bg-dark text-white border-secondary" rows="3" placeholder="Share your thoughts..."></textarea>
+                            
+                            <!-- The Picker Container (Hidden by default) -->
+                            <div id="emoji-picker-container" class="position-absolute shadow" style="display: none; z-index: 1000; bottom: 100%;"></div>
                         </div>
                         <button type="submit" class="btn btn-primary w-100 fw-bold">Post Review</button>
                     </form>
@@ -101,6 +115,16 @@
                         </div>
                         
                         <p class="mt-3 fs-5 mb-3">"{{ $review->comment }}"</p>
+                        <!-- Image upload-->
+                        @if($review->image)
+                            <div class="mt-3">
+                                {{-- Verify this path specifically --}}
+                                <img src="{{ asset('storage/' . $review->image) }}" 
+                                    class="rounded border border-secondary shadow-sm img-fluid" 
+                                    style="max-height: 400px; object-fit: cover;"
+                                    alt="Critique Image">
+                            </div>
+                        @endif
 
                         <!-- Interaction Bar -->
                         <div class="d-flex align-items-center gap-3 mt-2">
@@ -155,60 +179,62 @@
         </div>
     </div>
 </div>
-
-<style>
-    body { background-color: #121212; }
-    .bg-dark { background-color: #1e1e1e !important; }
-    .border-secondary { border-color: #333 !important; }
-    .x-small { font-size: 0.75rem; }
-</style>
 @endsection
-<!-- The upvotes downvotes script -->
+<!-- Load the library FIRST -->
+<script src="https://cdn.jsdelivr.net/npm/emoji-mart@5.5.2/dist/browser.js"></script>
+
 <script>
-document.addEventListener('submit', function(e) {
-    if (e.target && e.target.classList.contains('vote-form')) {
-        e.preventDefault();
+document.addEventListener('DOMContentLoaded', function() {
+    const pickerOptions = { 
+        onEmojiSelect: (emoji) => {
+            const textarea = document.getElementById('critique-comment');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            
+            textarea.value = textarea.value.substring(0, start) + emoji.native + textarea.value.substring(end);
+            
+            textarea.focus();
+            textarea.setSelectionRange(start + emoji.native.length, start + emoji.native.length);
+        },
+        theme: 'dark'
+    }
 
-        const form = e.target;
-        const url = form.action;
-        const formData = new FormData(form);
-        const type = formData.get('type'); // 'up' or 'down'
-        
-        const urlParts = url.split('/');
-        const reviewId = urlParts[urlParts.length - 2]; 
+    const picker = new EmojiMart.Picker(pickerOptions);
+    const container = document.getElementById('emoji-picker-container');
+    const trigger = document.getElementById('emoji-trigger');
 
-        fetch(url, {
-            method: 'POST',
-            body: formData,
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                // 1. Update the numbers
-                const upLabel = document.getElementById(`upvotes-count-${reviewId}`);
-                const downLabel = document.getElementById(`downvotes-count-${reviewId}`);
-                if(upLabel) upLabel.innerText = data.upvotes;
-                if(downLabel) downLabel.innerText = data.downvotes;
+    if (container && trigger) {
+        container.appendChild(picker);
 
-                // 2. Handle Icon Colors
-                // Find both forms for this specific review/reply
-                const parentContainer = form.closest('.d-flex');
-                const upIcon = parentContainer.querySelector('input[value="up"]').parentElement.querySelector('i');
-                const downIcon = parentContainer.querySelector('input[value="down"]').parentElement.querySelector('i');
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevents the 'click outside' listener from closing it immediately
+            container.style.display = container.style.display === 'none' ? 'block' : 'none';
+        });
 
-                if (type === 'up') {
-                    // Toggle blue for upvote, ensure downvote is gray
-                    upIcon.classList.toggle('text-primary');
-                    downIcon.classList.remove('text-danger');
-                } else {
-                    // Toggle red for downvote, ensure upvote is gray
-                    downIcon.classList.toggle('text-danger');
-                    upIcon.classList.remove('text-primary');
-                }
+        // Close picker if clicking outside
+        document.addEventListener('click', (e) => {
+            if (!container.contains(e.target) && e.target !== trigger) {
+                container.style.display = 'none';
             }
-        })
-        .catch(error => console.error('Error:', error));
+        });
     }
 });
 </script>
+
+<style>
+    /* Ensure the picker stays on top and is visible against the dark background */
+    #emoji-picker-container {
+        right: 0;
+        bottom: 40px; /* Positions it above the textarea */
+        z-index: 2000;
+    }
+    
+    /* Optional: Small tweak to the blue emoji icon to make it look like a button */
+    #emoji-trigger {
+        transition: transform 0.2s;
+    }
+    #emoji-trigger:hover {
+        transform: scale(1.2);
+        color: #0d6efd !important;
+    }
+</style>

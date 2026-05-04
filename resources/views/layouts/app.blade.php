@@ -37,7 +37,7 @@
                     {{-- Genre Dropdown --}}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle text-body-emphasis" href="#" role="button" data-bs-toggle="dropdown">
-                            Genres
+                            <i class="fas fa-list-ul me-1"></i> Genres
                         </a>
                         <ul class="dropdown-menu shadow">
                             @foreach($genres as $genre)
@@ -48,6 +48,38 @@
                                 </li>
                             @endforeach
                         </ul>
+                    </li>
+
+                    {{-- Most Viewed --}}
+                    <li class="nav-item">
+                        <a class="nav-link {{ request('sort_by') === 'views' ? 'fw-bold text-primary' : 'text-body-emphasis' }}" 
+                        href="{{ route('movies.show', ['sort_by' => 'views']) }}">
+                            <i class="fas fa-eye me-1 text-info"></i> Most Viewed
+                        </a>
+                    </li>
+
+                    {{-- Critics' Choice --}}
+                    <li class="nav-item">
+                        <a class="nav-link {{ request('sort_by') === 'top_rated' ? 'fw-bold text-primary' : 'text-body-emphasis' }}" 
+                        href="{{ route('movies.show', ['sort_by' => 'top_rated']) }}">
+                            <i class="fas fa-star me-1 text-warning"></i> Critics' Choice
+                        </a>
+                    </li>
+
+                    {{-- Most Critiqued --}}
+                    <li class="nav-item">
+                        <a class="nav-link {{ request('sort_by') === 'critiqued' ? 'fw-bold text-primary' : 'text-body-emphasis' }}" 
+                        href="{{ route('movies.show', ['sort_by' => 'critiqued']) }}">
+                            <i class="fas fa-pen-nib me-1 text-warning"></i> Most Critiqued
+                        </a>
+                    </li>
+
+                    {{-- Most Engaged --}}
+                    <li class="nav-item">
+                        <a class="nav-link {{ request('sort_by') === 'engaged' ? 'fw-bold text-primary' : 'text-body-emphasis' }}" 
+                        href="{{ route('movies.show', ['sort_by' => 'engaged']) }}">
+                            <i class="fas fa-comments me-1 text-success"></i> Most Engaged
+                        </a>
                     </li>
                 </ul>
 

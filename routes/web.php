@@ -14,7 +14,7 @@ Route::get('/homepage', [apiController::class, 'showMovies']);
 Route::get('/search', [apiController::class, 'search']);
 Route::get('/genre/{id}', [apiController::class, 'byGenre']);
 Route::get('/movie/{id}', [apiController::class, 'showDetails'])->name('movie.details');
-
+Route::get('/movies', [apiController::class, 'showMovies'])->name('movies.show');
 //Auto created by the breeze plugin
 Route::middleware('auth')->group(function () {
     //Needed this for the user account ReviewController

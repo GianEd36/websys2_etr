@@ -22,23 +22,53 @@ class apiController extends Controller
         // Our filter
         $sortBy = $request->query('sort_by');
 
-        if ($sortBy === 'views') {
-                $popularIds = \App\Models\MovieView::orderBy('views', 'desc')->take(20)->pluck('movie_id');
-                
-                $movies = [];
-                foreach ($popularIds as $id) {
-                    $movieData = Http::withToken($token)->get("https://api.themoviedb.org/3/movie/{$id}")->json();
-                    if (isset($movieData['id'])) {
-                        $movies[] = $movieData;
-                    }
-                }
+        if ($sortBy) {
+            $movieIds = [];
 
-                return view('homepage', [
-                    'movies' => $movies,
-                    'genres' => $genres,
-                    'currentPage' => 1,
-                    'totalPages' => 1
-                ]);
+            if ($sortBy === 'views') {
+                $movieIds = \App\Models\MovieView::orderBy('views', 'desc')->take(20)->pluck('movie_id');
+            } 
+            elseif ($sortBy === 'top_rated') {
+                // Get movie IDs ordered by average rating (only for root critiques)
+                $movieIds = \App\Models\Review::whereNull('parent_id')
+                    ->select('movie_id', \DB::raw('AVG(rating) as avg_rating'))
+                    ->groupBy('movie_id')
+                    ->having(\DB::raw('COUNT(*)'), '>=', 1) // Optional: change 1 to 3 for better quality
+                    ->orderBy('avg_rating', 'desc')
+                    ->take(20)
+                    ->pluck('movie_id');
+            }
+            elseif ($sortBy === 'critiqued') {
+                // Count unique reviews per movie (where parent_id is null)
+                $movieIds = \App\Models\Review::whereNull('parent_id')
+                    ->select('movie_id', \DB::raw('count(*) as total'))
+                    ->groupBy('movie_id')
+                    ->orderBy('total', 'desc')
+                    ->take(20)
+                    ->pluck('movie_id');
+            } 
+            elseif ($sortBy === 'engaged') {
+                // Count replies/conversations per movie (where parent_id is NOT null)
+                $movieIds = \App\Models\Review::whereNotNull('parent_id')
+                    ->select('movie_id', \DB::raw('count(*) as total'))
+                    ->groupBy('movie_id')
+                    ->orderBy('total', 'desc')
+                    ->take(20)
+                    ->pluck('movie_id');
+            }
+
+            $movies = [];
+            foreach ($movieIds as $id) {
+                $movieData = Http::withToken($token)->get("https://api.themoviedb.org/3/movie/{$id}")->json();
+                if (isset($movieData['id'])) { $movies[] = $movieData; }
+            }
+
+            return view('homepage', [
+                'movies' => $movies,
+                'genres' => $genres,
+                'currentPage' => 1,
+                'totalPages' => 1
+            ]);
         }
 
         $response = Http::withToken($token)->get("https://api.themoviedb.org/3/movie/popular", ['page' => $page,]);

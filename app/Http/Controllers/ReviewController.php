@@ -12,28 +12,37 @@ class ReviewController extends Controller
 {
     public function store(Request $request, $id)
     {
-        // Checks if critique already exist for the user
+        // 1. Checks if critique already exists for the user
         $exists = Review::where('movie_id', $id)
                             ->where('user_id', auth()->id())
-                            ->whereNull('parent_id') // <--- Add this constraint
+                            ->whereNull('parent_id') 
                             ->exists();
 
         if ($exists) {
             return back()->withErrors(['message' => 'You have already critiqued this movie!']);
         }
 
-        // Validate with custom messages
+        // 2. Updated Validation to include the image
         $request->validate([
             'rating' => 'required|integer|min:1|max:10',
             'comment' => 'required|min:5|max:1000',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048', // Added image validation
         ], [
             'rating.required' => 'A rating score is required for your critique.',
             'rating.integer' => 'The rating must be a whole number.',
             'comment.required' => 'Please provide a comment for your critique.',
             'comment.min' => 'Your critique must be at least 5 characters long.',
+            'image.image' => 'The file must be an image (jpeg, png, jpg, or webp).',
         ]);
 
-        // Fetch TMDB data with error handling
+        // 3. Handle the Image Upload before creating the record
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            // Stores in storage/app/public/reviews
+            $imagePath = $request->file('image')->store('reviews', 'public');
+        }
+
+        // 4. Fetch TMDB data with error handling (Existing logic)
         try {
             $token = config('services.tmdb.token');
             $response = Http::withToken($token)->timeout(5)->get("https://api.themoviedb.org/3/movie/{$id}");
@@ -47,16 +56,17 @@ class ReviewController extends Controller
             return back()->withErrors(['message' => 'Unable to verify movie details. Please try again later.']);
         }
 
-        // Create a review
+        // 5. Create the review with the image path included
         Review::create([
             'movie_id' => $id,
             'user_id' => auth()->id(),
             'user_name' => auth()->user()->name, 
             'rating' => $request->rating,
             'comment' => $request->comment,
+            'image' => $imagePath, // New field
             'movie_title' => $movieData['title'] ?? 'Unknown Movie',
             'movie_poster' => $movieData['poster_path'] ?? null,
-            'parent_id' => null, // Explicitly set as null for main critiques
+            'parent_id' => null, 
         ]);
 
         return redirect()->route('movie.details', $id)->with('success', 'Your critique has been published!');

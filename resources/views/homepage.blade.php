@@ -4,7 +4,19 @@
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-end mb-4">
         <h2 class="fw-bold text-body-emphasis mb-0">
-            {{ request('query') ? 'Search Results for "'.request('query').'"' : 'Trending Movies' }}
+            @if(request('query'))
+                Search Results for "{{ request('query') }}"
+            @elseif(request('sort_by') === 'views')
+                <i class="fas fa-eye text-primary me-2"></i> Most Viewed
+            @elseif(request('sort_by') === 'top_rated')
+                <i class="fas fa-star text-warning me-2"></i> Critics' Choice (Highest Rated)
+            @elseif(request('sort_by') === 'critiqued')
+                <i class="fas fa-pen-nib text-warning me-2"></i> Most Critiqued
+            @elseif(request('sort_by') === 'engaged')
+                <i class="fas fa-comments text-success me-2"></i> Most Engaged
+            @else
+                Trending Movies
+            @endif
         </h2>
     </div>
 
@@ -19,15 +31,47 @@
                                  alt="{{ $movie['title'] }}"
                                  style="aspect-ratio: 2/3; object-fit: cover;">
                             
-                            {{-- NATIVE RATING BLOCK --}}
-                            <div class="position-absolute top-0 end-0 m-2">
+                            {{-- NATIVE RATING & SOCIAL BLOCK --}}
+                            <div class="position-absolute top-0 end-0 m-2 d-flex flex-column align-items-end gap-1">
+                                {{-- 1. Rating Badge (Existing) --}}
                                 @php
-                                    $localAvg = \App\Models\Review::where('movie_id', $movie['id'])->avg('rating');
+                                    $localAvg = \App\Models\Review::where('movie_id', $movie['id'])->whereNull('parent_id')->avg('rating');
                                 @endphp
-                                
                                 @if($localAvg)
                                     <span class="badge bg-primary backdrop-blur border border-primary-subtle shadow-sm">
-                                        <i class="fas fa-user-edit me-1"></i> {{ number_format($localAvg, 1) }}
+                                        <i class="fas fa-star me-1 text-warning"></i> {{ number_format($localAvg, 1) }}
+                                    </span>
+                                @endif
+
+                                {{-- 2. Critique Count Badge (New!) --}}
+                                @php
+                                    $critiqueCount = \App\Models\Review::where('movie_id', $movie['id'])->whereNull('parent_id')->count();
+                                @endphp
+                                @if($critiqueCount > 0)
+                                    <span class="badge bg-warning text-dark backdrop-blur border border-warning-subtle shadow-sm">
+                                        <i class="fas fa-pen-nib me-1"></i> {{ $critiqueCount }}
+                                    </span>
+                                @endif
+
+                                {{-- 3. Engagement/Reply Badge (New!) --}}
+                                @php
+                                    $engagementCount = \App\Models\Review::where('movie_id', $movie['id'])->whereNotNull('parent_id')->count();
+                                @endphp
+                                @if($engagementCount > 0)
+                                    <span class="badge bg-success backdrop-blur border border-success-subtle shadow-sm">
+                                        <i class="fas fa-comments me-1"></i> {{ $engagementCount }}
+                                    </span>
+                                @endif
+                            </div>
+
+                            {{-- 4. View Count Badge (Bottom-Left) --}}
+                            <div class="position-absolute bottom-0 start-0 m-2">
+                                @php
+                                    $views = \App\Models\MovieView::where('movie_id', $movie['id'])->value('views') ?? 0;
+                                @endphp
+                                @if($views > 0)
+                                    <span class="badge bg-dark backdrop-blur border border-secondary-subtle shadow-sm opacity-75">
+                                        <i class="fas fa-eye me-1 text-info"></i> {{ number_format($views) }}
                                     </span>
                                 @endif
                             </div>

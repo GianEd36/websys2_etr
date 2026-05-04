@@ -15,6 +15,8 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+
+                    <!-- New Most Viewed Link -->
                     <x-nav-link :href="route('movies.show', ['sort_by' => 'views'])" 
                                 :active="request()->fullUrlIs(route('movies.show', ['sort_by' => 'views']))">
                         {{ __('Most Viewed') }}
@@ -76,8 +78,10 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
+
+            <!-- New Mobile Most Viewed Link -->
             <x-responsive-nav-link :href="route('movies.show', ['sort_by' => 'views'])" 
-                       :active="request()->fullUrlIs(route('movies.show', ['sort_by' => 'views']))">
+                                :active="request()->fullUrlIs(route('movies.show', ['sort_by' => 'views']))">
                 {{ __('Most Viewed') }}
             </x-responsive-nav-link>
         </div>
