@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container py-5 text-white">
+<div class="container py-5">
     <!-- Movie Header -->
     <div class="row mb-5">
         <div class="col-md-4">
@@ -37,7 +37,7 @@
             <!-- Trailer Modal -->
             <div class="modal fade" id="trailerModal" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog modal-lg modal-dialog-centered">
-                    <div class="modal-content bg-dark border-secondary">
+                    <div class="modal-content border-secondary">
                         <div class="modal-body p-0">
                             <div class="ratio ratio-16x9">
                                 <iframe src="https://www.youtube.com/embed/{{ $trailer['key'] }}" allowfullscreen></iframe>
@@ -54,7 +54,7 @@
 
             <!-- Write a Review Section -->
             @auth
-            <div class="card bg-dark border-secondary mt-5 shadow">
+            <div class="card border-secondary mt-5 shadow">
                 <div class="card-body p-4">
                     <h5 class="fw-bold mb-3"><i class="fas fa-pen me-2 text-primary"></i> Write a Critique</h5>
                     <form action="{{ route('reviews.store', $movie['id']) }}" method="POST" enctype="multipart/form-data">
@@ -64,14 +64,15 @@
                         
                         <div class="mb-3">
                             <label class="small text-muted text-uppercase fw-bold">Rating (1-10)</label>
-                            <input type="number" name="rating" class="form-control bg-dark text-white border-secondary w-25" min="1" max="10">
+                            <input type="number" name="rating" class="form-control border-secondary w-25" min="1" max="10">
                         </div>
                         <!-- ADDED: Image Upload Field -->
                         <div class="mb-3">
                             <label class="small text-muted text-uppercase fw-bold"><i class="fas fa-image me-1"></i> Attach a Photo (Optional)</label>
-                            <input type="file" name="image" class="form-control bg-dark text-white border-secondary">
+                            <input type="file" name="image" class="form-control  border-secondary">
                             <div class="x-small text-muted mt-1">Supports JPG, PNG, WEBP (Max 2MB)</div>
                         </div>
+                        <!-- In your Write a Critique section -->
                         <div class="mb-3 position-relative">
                             <label class="small text-muted text-uppercase fw-bold d-flex justify-content-between">
                                 Your Comment
@@ -79,17 +80,17 @@
                                     <i class="far fa-smile fs-5"></i>
                                 </button>
                             </label>
-                            <textarea id="critique-comment" name="comment" class="form-control bg-dark text-white border-secondary" rows="3" placeholder="Share your thoughts..."></textarea>
+                            <textarea id="critique-comment" name="comment" class="form-control border-secondary" rows="3" placeholder="Share your thoughts..."></textarea>
                             
-                            <!-- The Picker Container (Hidden by default) -->
-                            <div id="emoji-picker-container" class="position-absolute shadow" style="display: none; z-index: 1000; bottom: 100%;"></div>
+                            <!-- This container will now be moved around by JS -->
+                            <div id="emoji-picker-container" class="emoji-picker-global shadow" style="display: none;"></div>
                         </div>
                         <button type="submit" class="btn btn-primary w-100 fw-bold">Post Review</button>
                     </form>
                 </div>
             </div>
             @else
-            <div class="alert alert-info mt-5 bg-dark border-info text-info">
+            <div class="alert alert-info mt-5 border-info text-info">
                 Please <a href="{{ route('login') }}" class="fw-bold">Login</a> to leave a critique.
             </div>
             @endauth
@@ -104,8 +105,8 @@
             <h3 class="fw-bold mb-4">User Critiques</h3>
             
             @forelse($reviews->where('parent_id', null) as $review)
-                <div class="card bg-dark border-0 shadow-sm mb-4" style="border-radius: 15px;">
-                    <div class="card-body p-4 text-white">
+                <div class="card border-0 shadow-sm mb-4" style="border-radius: 15px;">
+                    <div class="card-body p-4 ">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
                                 <h6 class="fw-bold mb-0 text-info">{{ $review->user->name }}</h6>
@@ -152,13 +153,30 @@
                             </button>
                         </div>
 
-                        <!-- Top-Level Reply Form -->
+                        <!-- Top-Level Reply Form (For parent critiques) -->
+                        <!-- Find the Top-Level Reply Form in details.blade.php -->
                         <div class="collapse mt-3" id="replyForm{{ $review->id }}">
-                            <form action="{{ route('reviews.reply', $review->id) }}" method="POST">
+                            <form action="{{ route('reviews.reply', $review->id) }}" method="POST" enctype="multipart/form-data">
                                 @csrf
-                                <div class="input-group">
-                                    <input type="text" name="comment" class="form-control bg-dark text-white border-secondary" placeholder="Add a comment...">
-                                    <button class="btn btn-primary" type="submit">Post</button>
+                                <div class="card bg-body-tertiary border-secondary">
+                                    <div class="card-body p-2">
+                                        <textarea name="comment" class="form-control form-control-sm bg-transparent border-0 mb-2" 
+                                                placeholder="Add a comment..." rows="2" required></textarea>
+                                        
+                                        <!-- ADDED: position-relative here -->
+                                        <div class="d-flex justify-content-between align-items-center position-relative"> <!-- Add position-relative here -->
+                                            <div class="d-flex gap-2">
+                                                <label class="btn btn-sm btn-outline-secondary border-0 p-0 px-1 mb-0">
+                                                    <i class="fas fa-image"></i>
+                                                    <input type="file" name="image" class="d-none">
+                                                </label>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary border-0 p-0 px-1 emoji-trigger-reply">
+                                                    <i class="far fa-smile"></i>
+                                                </button>
+                                            </div>
+                                            <button class="btn btn-primary btn-sm px-3" type="submit">Post</button>
+                                        </div>
+                                    </div>
                                 </div>
                             </form>
                         </div>
@@ -182,59 +200,66 @@
 @endsection
 <!-- Load the library FIRST -->
 <script src="https://cdn.jsdelivr.net/npm/emoji-mart@5.5.2/dist/browser.js"></script>
-
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const pickerOptions = { 
-        onEmojiSelect: (emoji) => {
-            const textarea = document.getElementById('critique-comment');
-            const start = textarea.selectionStart;
-            const end = textarea.selectionEnd;
-            
-            textarea.value = textarea.value.substring(0, start) + emoji.native + textarea.value.substring(end);
-            
-            textarea.focus();
-            textarea.setSelectionRange(start + emoji.native.length, start + emoji.native.length);
-        },
-        theme: 'dark'
-    }
-
-    const picker = new EmojiMart.Picker(pickerOptions);
+document.addEventListener('DOMContentLoaded', async function() {
+    let activeTextarea = null;
     const container = document.getElementById('emoji-picker-container');
-    const trigger = document.getElementById('emoji-trigger');
 
-    if (container && trigger) {
-        container.appendChild(picker);
-
-        trigger.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevents the 'click outside' listener from closing it immediately
-            container.style.display = container.style.display === 'none' ? 'block' : 'none';
-        });
-
-        // Close picker if clicking outside
-        document.addEventListener('click', (e) => {
-            if (!container.contains(e.target) && e.target !== trigger) {
-                container.style.display = 'none';
+    // Initialize the picker with automatic data loading
+    const picker = new EmojiMart.Picker({
+        theme: 'dark',
+        set: 'native', // Use native emojis to avoid image loading issues
+        onEmojiSelect: (emoji) => {
+            if (activeTextarea) {
+                const start = activeTextarea.selectionStart;
+                const end = activeTextarea.selectionEnd;
+                activeTextarea.value = activeTextarea.value.substring(0, start) + emoji.native + activeTextarea.value.substring(end);
+                activeTextarea.focus();
+                activeTextarea.setSelectionRange(start + emoji.native.length, start + emoji.native.length);
             }
-        });
-    }
+        }
+    });
+
+    container.appendChild(picker);
+
+    document.addEventListener('click', (e) => {
+        const trigger = e.target.closest('#emoji-trigger, .emoji-trigger-reply');
+        
+        if (trigger) {
+            e.stopPropagation();
+            e.preventDefault();
+
+            const parentForm = trigger.closest('form');
+            activeTextarea = parentForm.querySelector('textarea');
+
+            // Find the anchor. It must be 'position-relative'
+            const anchor = trigger.closest('.position-relative');
+
+            if (container.style.display === 'block' && container.parentElement === anchor) {
+                container.style.display = 'none';
+            } else if (anchor) {
+                anchor.appendChild(container);
+                container.style.display = 'block';
+            }
+        } else if (!container.contains(e.target)) {
+            container.style.display = 'none';
+        }
+    });
 });
 </script>
 
 <style>
-    /* Ensure the picker stays on top and is visible against the dark background */
-    #emoji-picker-container {
+    .emoji-picker-global {
+        position: absolute !important;
+        z-index: 9999 !important;
+        bottom: 100%; /* Positions it directly above the button/input */
         right: 0;
-        bottom: 40px; /* Positions it above the textarea */
-        z-index: 2000;
+        margin-bottom: 10px;
+        display: none;
     }
-    
-    /* Optional: Small tweak to the blue emoji icon to make it look like a button */
-    #emoji-trigger {
-        transition: transform 0.2s;
-    }
-    #emoji-trigger:hover {
-        transform: scale(1.2);
-        color: #0d6efd !important;
+
+    /* Standardizes the context for main and reply forms */
+    .position-relative { 
+        position: relative !important; 
     }
 </style>

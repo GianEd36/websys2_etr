@@ -22,6 +22,11 @@
         a { color: inherit; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Check for saved theme before the page even paints
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-bs-theme', savedTheme);
+    </script>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg border-bottom shadow-sm mb-4">
@@ -99,7 +104,7 @@
 
                 <div class="d-flex align-items-center">
                     {{-- Theme Toggle --}}
-                    <button class="btn btn-link nav-link me-3" id="themeToggle">
+                    <button class="btn btn-link nav-link me-3" onclick="toggleTheme()">
                         <i class="fas fa-moon" id="themeIcon"></i>
                     </button>
 
@@ -149,6 +154,26 @@
                 icon.classList.replace('fa-sun', 'fa-moon');
             }
         });
+        (function () {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+        })();
+        function toggleTheme() {
+            const htmlElement = document.documentElement;
+            const currentTheme = htmlElement.getAttribute('data-bs-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            // 1. Apply to the current page
+            htmlElement.setAttribute('data-bs-theme', newTheme);
+            
+            // 2. Save it for the next page load
+            localStorage.setItem('theme', newTheme);
+            
+            // Optional: If you want to update your Emoji Picker theme instantly too:
+            if (typeof picker !== 'undefined') {
+                picker.update({ theme: newTheme });
+            }
+        }
     </script>
 </body>
 </html>

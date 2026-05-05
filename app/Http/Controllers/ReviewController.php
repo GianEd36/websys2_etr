@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 class ReviewController extends Controller
 {
@@ -77,16 +78,26 @@ class ReviewController extends Controller
         if (auth()->id() !== $review->user_id) {
             abort(403, 'Unauthorized action.');
         }
-
+        // NEW: Delete physical file if it exists
+        if ($review->image) {
+            // Since we're storing in 'reviews' on the 'public' disk
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($review->image);
+        }
         $review->delete();
 
-        return back()->with('success', 'Review deleted successfully!');
+        return back()->with('success', 'Review and associated image deleted successfully!');
     }
     public function reply(Request $request, Review $review)
     {
         $request->validate([
             'comment' => 'required|max:255',
+            'image' => 'nullable|image|max:2048'
         ]);
+
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('reviews', 'public');
+        }
 
         Review::create([
             'user_id' => auth()->id(),
@@ -94,6 +105,7 @@ class ReviewController extends Controller
             'movie_id' => $review->movie_id, // Keep it linked to the same movie
             'movie_title' => $review->movie_title,
             'comment' => $request->comment,
+            'image' => $imagePath, // Save the reply image path
             'rating' => null, // No rating for replies
         ]);
 
