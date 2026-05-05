@@ -130,7 +130,7 @@
                         <!-- Interaction Bar -->
                         <div class="d-flex align-items-center gap-3 mt-2">
                             <!-- Unified Upvote -->
-                                <form action="{{ route('reviews.vote', $review->id) }}" method="POST" class="vote-form d-inline">
+                                <form action="{{ route('reviews.vote', $review->id) }}" method="POST" class="vote-form d-inline" data-id="{{ $review->id }}">
                                     @csrf
                                     <input type="hidden" name="type" value="up">
                                     <button type="submit" class="btn btn-sm p-0 border-0 text-muted">
@@ -139,7 +139,7 @@
                                     </button>
                                 </form>
 
-                                <form action="{{ route('reviews.vote', $review->id) }}" method="POST" class="vote-form d-inline">
+                                <form action="{{ route('reviews.vote', $review->id) }}" method="POST" class="vote-form d-inline" data-id="{{ $review->id }}">
                                     @csrf
                                     <input type="hidden" name="type" value="down">
                                     <button type="submit" class="btn btn-sm p-0 border-0 text-muted">
@@ -154,7 +154,6 @@
                         </div>
 
                         <!-- Top-Level Reply Form (For parent critiques) -->
-                        <!-- Find the Top-Level Reply Form in details.blade.php -->
                         <div class="collapse mt-3" id="replyForm{{ $review->id }}">
                             <form action="{{ route('reviews.reply', $review->id) }}" method="POST" enctype="multipart/form-data">
                                 @csrf
@@ -162,9 +161,7 @@
                                     <div class="card-body p-2">
                                         <textarea name="comment" class="form-control form-control-sm bg-transparent border-0 mb-2" 
                                                 placeholder="Add a comment..." rows="2" required></textarea>
-                                        
-                                        <!-- ADDED: position-relative here -->
-                                        <div class="d-flex justify-content-between align-items-center position-relative"> <!-- Add position-relative here -->
+                                        <div class="d-flex justify-content-between align-items-center position-relative">
                                             <div class="d-flex gap-2">
                                                 <label class="btn btn-sm btn-outline-secondary border-0 p-0 px-1 mb-0">
                                                     <i class="fas fa-image"></i>
@@ -204,11 +201,15 @@
 document.addEventListener('DOMContentLoaded', async function() {
     let activeTextarea = null;
     const container = document.getElementById('emoji-picker-container');
+    
+    // Explicitly fetch and provide the data to avoid CDN timeout issues
+    const response = await fetch('https://cdn.jsdelivr.net/npm/@emoji-mart/data');
+    const emojiData = await response.json();
 
-    // Initialize the picker with automatic data loading
-    const picker = new EmojiMart.Picker({
+    const pickerOptions = {
+        data: emojiData,
         theme: 'dark',
-        set: 'native', // Use native emojis to avoid image loading issues
+        set: 'native', // Use system emojis for reliability
         onEmojiSelect: (emoji) => {
             if (activeTextarea) {
                 const start = activeTextarea.selectionStart;
@@ -218,8 +219,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 activeTextarea.setSelectionRange(start + emoji.native.length, start + emoji.native.length);
             }
         }
-    });
+    };
 
+    // Initial creation
+    const picker = new EmojiMart.Picker(pickerOptions);
     container.appendChild(picker);
 
     document.addEventListener('click', (e) => {
@@ -231,8 +234,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             const parentForm = trigger.closest('form');
             activeTextarea = parentForm.querySelector('textarea');
-
-            // Find the anchor. It must be 'position-relative'
             const anchor = trigger.closest('.position-relative');
 
             if (container.style.display === 'block' && container.parentElement === anchor) {
@@ -240,11 +241,74 @@ document.addEventListener('DOMContentLoaded', async function() {
             } else if (anchor) {
                 anchor.appendChild(container);
                 container.style.display = 'block';
+
+                // FORCE RENDER FIX: If the picker looks empty, replace it with a fresh one
+                // This solves the Shadow DOM rendering bug seen in your screenshots
+                const currentPicker = container.querySelector('em-emoji-picker');
+                if (!currentPicker || currentPicker.innerHTML === '') {
+                    container.innerHTML = '';
+                    const newPicker = new EmojiMart.Picker(pickerOptions);
+                    container.appendChild(newPicker);
+                }
             }
         } else if (!container.contains(e.target)) {
             container.style.display = 'none';
         }
     });
+    
+    document.addEventListener('submit', function(e) {
+    const form = e.target.closest('.vote-form');
+    if (!form) return;
+
+    e.preventDefault();
+
+    const url = form.getAttribute('action');
+    const formData = new FormData(form);
+    const type = formData.get('type'); 
+    const reviewId = form.getAttribute('data-id'); 
+    
+    // Select the up and down counters for this specific critique/reply
+    const upSpan = document.getElementById(`upvotes-count-${reviewId}`);
+    const downSpan = document.getElementById(`downvotes-count-${reviewId}`);
+    
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const parentContainer = form.closest('.d-flex');
+    const upIcon = parentContainer.querySelector('.fa-arrow-up');
+    const downIcon = parentContainer.querySelector('.fa-arrow-down');
+
+    submitBtn.disabled = true;
+
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 1. Update BOTH counts to ensure UI is perfectly in sync
+            if (upSpan) upSpan.innerText = data.upvotes;
+            if (downSpan) downSpan.innerText = data.downvotes;
+            
+            // 2. Reset colors for both icons in this row
+            upIcon.classList.remove('text-primary');
+            downIcon.classList.remove('text-danger');
+
+            // 3. Highlight the clicked arrow only if 'voted' is true
+            if (data.voted) {
+                if (type === 'up') upIcon.classList.add('text-primary');
+                else downIcon.classList.add('text-danger');
+            }
+        }
+    })
+    .catch(error => console.error('Error:', error))
+    .finally(() => {
+        submitBtn.disabled = false;
+    });
+});
 });
 </script>
 
