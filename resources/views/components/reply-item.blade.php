@@ -19,7 +19,7 @@
     @endif
 
     <div class="d-flex align-items-center gap-3 mt-1">
-        <form action="{{ route('reviews.vote', $reply->id) }}" method="POST" class="vote-form d-inline">
+        <form action="{{ route('reviews.vote', $reply->id) }}" method="POST" class="vote-form d-inline" data-id="{{ $reply->id }}">
             @csrf
             <input type="hidden" name="type" value="up">
             <button type="submit" class="btn btn-sm p-0 border-0 text-muted">
@@ -28,7 +28,7 @@
             </button>
         </form>
 
-        <form action="{{ route('reviews.vote', $reply->id) }}" method="POST" class="vote-form d-inline">
+        <form action="{{ route('reviews.vote', $reply->id) }}" method="POST" class="vote-form d-inline" data-id="{{ $reply->id }}">
             @csrf
             <input type="hidden" name="type" value="down">
             <button type="submit" class="btn btn-sm p-0 border-0 text-muted">

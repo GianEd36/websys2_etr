@@ -257,58 +257,56 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
     
     document.addEventListener('submit', function(e) {
-    const form = e.target.closest('.vote-form');
-    if (!form) return;
+        const form = e.target.closest('.vote-form');
+        if (!form) return;
 
-    e.preventDefault();
+        e.preventDefault();
 
-    const url = form.getAttribute('action');
-    const formData = new FormData(form);
-    const type = formData.get('type'); 
-    const reviewId = form.getAttribute('data-id'); 
-    
-    // Select the up and down counters for this specific critique/reply
-    const upSpan = document.getElementById(`upvotes-count-${reviewId}`);
-    const downSpan = document.getElementById(`downvotes-count-${reviewId}`);
-    
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const parentContainer = form.closest('.d-flex');
-    const upIcon = parentContainer.querySelector('.fa-arrow-up');
-    const downIcon = parentContainer.querySelector('.fa-arrow-down');
+        const url = form.getAttribute('action');
+        const formData = new FormData(form);
+        const type = formData.get('type'); 
+        const reviewId = form.getAttribute('data-id'); 
+        
+        // Select the specific counters
+        const upSpan = document.getElementById(`upvotes-count-${reviewId}`);
+        const downSpan = document.getElementById(`downvotes-count-${reviewId}`);
+        
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const parentContainer = form.closest('.d-flex');
+        const upIcon = parentContainer.querySelector('.fa-arrow-up');
+        const downIcon = parentContainer.querySelector('.fa-arrow-down');
 
-    submitBtn.disabled = true;
+        submitBtn.disabled = true;
 
-    fetch(url, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // 1. Update BOTH counts to ensure UI is perfectly in sync
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Sync the counts from your Controller's JSON
             if (upSpan) upSpan.innerText = data.upvotes;
             if (downSpan) downSpan.innerText = data.downvotes;
             
-            // 2. Reset colors for both icons in this row
+            // Reset colors
             upIcon.classList.remove('text-primary');
             downIcon.classList.remove('text-danger');
 
-            // 3. Highlight the clicked arrow only if 'voted' is true
+            // Toggle active color based on the 'voted' status returned by your Controller
             if (data.voted) {
                 if (type === 'up') upIcon.classList.add('text-primary');
                 else downIcon.classList.add('text-danger');
             }
-        }
-    })
-    .catch(error => console.error('Error:', error))
-    .finally(() => {
-        submitBtn.disabled = false;
+        })
+        .catch(error => console.error('Voting Error:', error))
+        .finally(() => {
+            submitBtn.disabled = false;
+        });
     });
-});
 });
 </script>
 
