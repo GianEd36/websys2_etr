@@ -129,24 +129,25 @@
 
                         <!-- Interaction Bar -->
                         <div class="d-flex align-items-center gap-3 mt-2">
-                            <!-- Unified Upvote -->
-                                <form action="{{ route('reviews.vote', $review->id) }}" method="POST" class="vote-form d-inline" data-id="{{ $review->id }}">
-                                    @csrf
-                                    <input type="hidden" name="type" value="up">
-                                    <button type="submit" class="btn btn-sm p-0 border-0 text-muted">
-                                        <i class="fas fa-arrow-up {{ $review->votes->where('user_id', auth()->id())->where('type', 'up')->count() ? 'text-primary' : '' }}"></i> 
-                                        <small id="upvotes-count-{{ $review->id }}">{{ $review->upvotes }}</small>
-                                    </button>
-                                </form>
+                            <!-- Upvote Form -->
+                            <form action="{{ route('reviews.vote', $review->id) }}" method="POST" class="vote-form d-inline" data-id="{{ $review->id }}">
+                                @csrf
+                                <input type="hidden" name="type" value="up">
+                                <button type="submit" class="btn btn-sm p-0 border-0 text-muted">
+                                    <i class="fas fa-arrow-up {{ $review->votes->where('user_id', auth()->id())->where('type', 'up')->count() ? 'text-primary' : '' }}"></i>
+                                    <small id="upvotes-count-{{ $review->id }}">{{ $review->upvotes }}</small>
+                                </button>
+                            </form>
 
-                                <form action="{{ route('reviews.vote', $review->id) }}" method="POST" class="vote-form d-inline" data-id="{{ $review->id }}">
-                                    @csrf
-                                    <input type="hidden" name="type" value="down">
-                                    <button type="submit" class="btn btn-sm p-0 border-0 text-muted">
-                                        <i class="fas fa-arrow-down {{ $review->votes->where('user_id', auth()->id())->where('type', 'down')->count() ? 'text-danger' : '' }}"></i> 
-                                        <small id="downvotes-count-{{ $review->id }}">{{ $review->downvotes }}</small>
-                                    </button>
-                                </form>
+                            <!-- Downvote Form - FIXED ID AND ICON -->
+                            <form action="{{ route('reviews.vote', $review->id) }}" method="POST" class="vote-form d-inline" data-id="{{ $review->id }}">
+                                @csrf
+                                <input type="hidden" name="type" value="down">
+                                <button type="submit" class="btn btn-sm p-0 border-0 text-muted">
+                                    <i class="fas fa-arrow-down {{ $review->votes->where('user_id', auth()->id())->where('type', 'down')->count() ? 'text-danger' : '' }}"></i>
+                                    <small id="downvotes-count-{{ $review->id }}">{{ $review->downvotes }}</small>
+                                </button>
+                            </form>
 
                             <button class="btn btn-sm btn-link text-decoration-none p-0 text-muted" type="button" data-bs-toggle="collapse" data-bs-target="#replyForm{{ $review->id }}">
                                 <i class="fas fa-reply me-1"></i> Reply
@@ -264,13 +265,13 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         const url = form.getAttribute('action');
         const formData = new FormData(form);
-        const type = formData.get('type'); 
-        const reviewId = form.getAttribute('data-id'); 
-        
-        // Select the specific counters
+        const type = formData.get('type');
+        const reviewId = form.getAttribute('data-id');
+
+        // Select the up and down counters for this specific critique/reply
         const upSpan = document.getElementById(`upvotes-count-${reviewId}`);
         const downSpan = document.getElementById(`downvotes-count-${reviewId}`);
-        
+
         const submitBtn = form.querySelector('button[type="submit"]');
         const parentContainer = form.closest('.d-flex');
         const upIcon = parentContainer.querySelector('.fa-arrow-up');
@@ -288,25 +289,35 @@ document.addEventListener('DOMContentLoaded', async function() {
         })
         .then(response => response.json())
         .then(data => {
-            // Sync the counts from your Controller's JSON
+        if (data.success) {
+            // Update both counts returned from the Controller
             if (upSpan) upSpan.innerText = data.upvotes;
             if (downSpan) downSpan.innerText = data.downvotes;
-            
-            // Reset colors
+
+            // Reset both icons to default muted state
             upIcon.classList.remove('text-primary');
             downIcon.classList.remove('text-danger');
 
-            // Toggle active color based on the 'voted' status returned by your Controller
+            // If the user currently has an active vote, highlight the correct one
             if (data.voted) {
-                if (type === 'up') upIcon.classList.add('text-primary');
-                else downIcon.classList.add('text-danger');
+                if (type === 'up') {
+                    upIcon.classList.add('text-primary');
+                } 
+                else if (type === 'down') {
+                    downIcon.classList.add('text-danger');
+                }
+            }
             }
         })
-        .catch(error => console.error('Voting Error:', error))
+        .catch(error => {
+            console.error('Voting Error:', error);
+            alert('Something went wrong. Check the console.');
+        })
         .finally(() => {
-            submitBtn.disabled = false;
+            // This MUST run to re-enable the button
+            submitBtn.disabled = false; 
         });
-    });
+    });  // <-- Make sure this closing brace exists and is properly placed
 });
 </script>
 

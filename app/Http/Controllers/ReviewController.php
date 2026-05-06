@@ -122,46 +122,45 @@ class ReviewController extends Controller
         }
         return back();
     }
-public function vote(Request $request, Review $review) {
-    $type = $request->type; // 'up' or 'down'
-    $userId = auth()->id();
-    $voted = false; // Track if a vote exists at the end
+    public function vote(Request $request, Review $review) {
+        $type = $request->type; // 'up' or 'down'
+        $userId = auth()->id();
+        $voted = false; // Track if a vote exists at the end
 
-    $existingVote = \App\Models\ReviewVote::where('user_id', $userId)
-        ->where('review_id', $review->id)
-        ->first();
+        $existingVote = \App\Models\ReviewVote::where('user_id', $userId)
+            ->where('review_id', $review->id)
+            ->first();
 
-    if ($existingVote) {
-        if ($existingVote->type === $type) {
-            $existingVote->delete();
-            $review->decrement($type === 'up' ? 'upvotes' : 'downvotes');
-            $voted = false; // Vote was removed
+        if ($existingVote) {
+            if ($existingVote->type === $type) {
+                $existingVote->delete();
+                $review->decrement($type === 'up' ? 'upvotes' : 'downvotes');
+                $voted = false; // Vote was removed
+            } else {
+                $review->decrement($existingVote->type === 'up' ? 'upvotes' : 'downvotes');
+                $existingVote->update(['type' => $type]);
+                $review->increment($type === 'up' ? 'upvotes' : 'downvotes');
+                $voted = true; // Vote was changed
+            }
         } else {
-            $review->decrement($existingVote->type === 'up' ? 'upvotes' : 'downvotes');
-            $existingVote->update(['type' => $type]);
+            \App\Models\ReviewVote::create([
+                'user_id' => $userId,
+                'review_id' => $review->id,
+                'type' => $type
+            ]);
             $review->increment($type === 'up' ? 'upvotes' : 'downvotes');
-            $voted = true; // Vote was changed
+            $voted = true; // New vote added
         }
-    } else {
-        \App\Models\ReviewVote::create([
-            'user_id' => $userId,
-            'review_id' => $review->id,
-            'type' => $type
-        ]);
-        $review->increment($type === 'up' ? 'upvotes' : 'downvotes');
-        $voted = true; // New vote added
-    }
 
-    if ($request->ajax() || $request->wantsJson()) {
-        return response()->json([
-            'success' => true,
-            'voted' => $voted,
-            'new_count' => ($type === 'up') ? $review->upvotes : $review->downvotes,
-            'upvotes' => $review->upvotes,
-            'downvotes' => $review->downvotes
-        ]);
-    }
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'voted' => $voted,
+                'upvotes' => (int) $review->upvotes, // Ensure these match the JS property names
+                'downvotes' => (int) $review->downvotes
+            ]);
+        }
 
-    return back();
-}
+        return back();
+    }
 }
