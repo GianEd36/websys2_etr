@@ -144,6 +144,7 @@
                                 @csrf
                                 <input type="hidden" name="type" value="down">
                                 <button type="submit" class="btn btn-sm p-0 border-0 text-muted">
+                                    <!-- FIXED: Icon should be arrow-down and ID must be downvotes-count -->
                                     <i class="fas fa-arrow-down {{ $review->votes->where('user_id', auth()->id())->where('type', 'down')->count() ? 'text-danger' : '' }}"></i>
                                     <small id="downvotes-count-{{ $review->id }}">{{ $review->downvotes }}</small>
                                 </button>
@@ -264,9 +265,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         e.preventDefault();
 
         const url = form.getAttribute('action');
+        const reviewId = form.getAttribute('data-id');
         const formData = new FormData(form);
         const type = formData.get('type');
-        const reviewId = form.getAttribute('data-id');
 
         // Select the up and down counters for this specific critique/reply
         const upSpan = document.getElementById(`upvotes-count-${reviewId}`);

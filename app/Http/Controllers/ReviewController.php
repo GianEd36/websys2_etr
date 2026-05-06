@@ -156,8 +156,8 @@ class ReviewController extends Controller
             return response()->json([
                 'success' => true,
                 'voted' => $voted,
-                'upvotes' => (int) $review->upvotes, // Ensure these match the JS property names
-                'downvotes' => (int) $review->downvotes
+                'upvotes' => $review->upvotes, // JavaScript uses this key
+                'downvotes' => $review->downvotes // JavaScript uses this key
             ]);
         }
 
