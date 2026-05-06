@@ -57,6 +57,26 @@
             <div class="card border-secondary mt-5 shadow">
                 <div class="card-body p-4">
                     <h5 class="fw-bold mb-3"><i class="fas fa-pen me-2 text-primary"></i> Write a Critique</h5>
+                    
+                    @if ($errors->any())
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <strong>Oops!</strong> Please fix the following errors:
+                            <ul class="mb-0 mt-2">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
+                    
+                    @if (session('success'))
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            {{ session('success') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
+                    
                     <form action="{{ route('reviews.store', $movie['id']) }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         <input type="hidden" name="movie_title" value="{{ $movie['title'] }}">
@@ -204,58 +224,92 @@ document.addEventListener('DOMContentLoaded', async function() {
     const container = document.getElementById('emoji-picker-container');
     
     // Explicitly fetch and provide the data to avoid CDN timeout issues
-    const response = await fetch('https://cdn.jsdelivr.net/npm/@emoji-mart/data');
-    const emojiData = await response.json();
+    let emojiData = null;
+    try {
+        const response = await fetch('https://cdn.jsdelivr.net/npm/@emoji-mart/data', { timeout: 5000 });
+        if (!response.ok) throw new Error(`Failed to fetch emoji data: ${response.status}`);
+        emojiData = await response.json();
+    } catch (error) {
+        console.warn('Emoji picker data failed to load:', error);
+        emojiData = null;
+    }
+    
+    // Only initialize emoji picker if data loaded successfully
+    if (!emojiData) {
+        console.warn('Emoji picker disabled due to data loading error. Form submission will work normally.');
+    }
 
-    const pickerOptions = {
-        data: emojiData,
-        theme: 'dark',
-        set: 'native', // Use system emojis for reliability
-        onEmojiSelect: (emoji) => {
-            if (activeTextarea) {
-                const start = activeTextarea.selectionStart;
-                const end = activeTextarea.selectionEnd;
-                activeTextarea.value = activeTextarea.value.substring(0, start) + emoji.native + activeTextarea.value.substring(end);
-                activeTextarea.focus();
-                activeTextarea.setSelectionRange(start + emoji.native.length, start + emoji.native.length);
-            }
-        }
-    };
-
-    // Initial creation
-    const picker = new EmojiMart.Picker(pickerOptions);
-    container.appendChild(picker);
-
-    document.addEventListener('click', (e) => {
-        const trigger = e.target.closest('#emoji-trigger, .emoji-trigger-reply');
-        
-        if (trigger) {
-            e.stopPropagation();
-            e.preventDefault();
-
-            const parentForm = trigger.closest('form');
-            activeTextarea = parentForm.querySelector('textarea');
-            const anchor = trigger.closest('.position-relative');
-
-            if (container.style.display === 'block' && container.parentElement === anchor) {
-                container.style.display = 'none';
-            } else if (anchor) {
-                anchor.appendChild(container);
-                container.style.display = 'block';
-
-                // FORCE RENDER FIX: If the picker looks empty, replace it with a fresh one
-                // This solves the Shadow DOM rendering bug seen in your screenshots
-                const currentPicker = container.querySelector('em-emoji-picker');
-                if (!currentPicker || currentPicker.innerHTML === '') {
-                    container.innerHTML = '';
-                    const newPicker = new EmojiMart.Picker(pickerOptions);
-                    container.appendChild(newPicker);
+    if (emojiData) {
+        const pickerOptions = {
+            data: emojiData,
+            theme: 'dark',
+            set: 'native', // Use system emojis for reliability
+            onEmojiSelect: (emoji) => {
+                if (activeTextarea) {
+                    const start = activeTextarea.selectionStart;
+                    const end = activeTextarea.selectionEnd;
+                    activeTextarea.value = activeTextarea.value.substring(0, start) + emoji.native + activeTextarea.value.substring(end);
+                    activeTextarea.focus();
+                    activeTextarea.setSelectionRange(start + emoji.native.length, start + emoji.native.length);
                 }
             }
-        } else if (!container.contains(e.target)) {
-            container.style.display = 'none';
+        };
+
+        // Initial creation
+        try {
+            const picker = new EmojiMart.Picker(pickerOptions);
+            container.appendChild(picker);
+        } catch (e) {
+            console.warn('Failed to initialize emoji picker:', e);
         }
-    });
+    }
+
+    if (emojiData) {
+        document.addEventListener('click', (e) => {
+            const trigger = e.target.closest('#emoji-trigger, .emoji-trigger-reply');
+            
+            if (trigger) {
+                e.stopPropagation();
+                e.preventDefault();
+
+                const parentForm = trigger.closest('form');
+                activeTextarea = parentForm.querySelector('textarea');
+                const anchor = trigger.closest('.position-relative');
+
+                if (container.style.display === 'block' && container.parentElement === anchor) {
+                    container.style.display = 'none';
+                } else if (anchor) {
+                    anchor.appendChild(container);
+                    container.style.display = 'block';
+
+                    // FORCE RENDER FIX: If the picker looks empty, replace it with a fresh one
+                    // This solves the Shadow DOM rendering bug seen in your screenshots
+                    const currentPicker = container.querySelector('em-emoji-picker');
+                    if (!currentPicker || currentPicker.innerHTML === '') {
+                        container.innerHTML = '';
+                        const pickerOptions = {
+                            data: emojiData,
+                            theme: 'dark',
+                            set: 'native',
+                            onEmojiSelect: (emoji) => {
+                                if (activeTextarea) {
+                                    const start = activeTextarea.selectionStart;
+                                    const end = activeTextarea.selectionEnd;
+                                    activeTextarea.value = activeTextarea.value.substring(0, start) + emoji.native + activeTextarea.value.substring(end);
+                                    activeTextarea.focus();
+                                    activeTextarea.setSelectionRange(start + emoji.native.length, start + emoji.native.length);
+                                }
+                            }
+                        };
+                        const newPicker = new EmojiMart.Picker(pickerOptions);
+                        container.appendChild(newPicker);
+                    }
+                }
+            } else if (!container.contains(e.target)) {
+                container.style.display = 'none';
+            }
+        });
+    }
     
     document.addEventListener('submit', function(e) {
         // Look specifically for the vote-form
