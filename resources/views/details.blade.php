@@ -139,12 +139,10 @@
                                 </button>
                             </form>
 
-                            <!-- Downvote Form - FIXED ID AND ICON -->
                             <form action="{{ route('reviews.vote', $review->id) }}" method="POST" class="vote-form d-inline" data-id="{{ $review->id }}">
                                 @csrf
                                 <input type="hidden" name="type" value="down">
                                 <button type="submit" class="btn btn-sm p-0 border-0 text-muted">
-                                    <!-- FIXED: Icon should be arrow-down and ID must be downvotes-count -->
                                     <i class="fas fa-arrow-down {{ $review->votes->where('user_id', auth()->id())->where('type', 'down')->count() ? 'text-danger' : '' }}"></i>
                                     <small id="downvotes-count-{{ $review->id }}">{{ $review->downvotes }}</small>
                                 </button>
@@ -260,20 +258,22 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     document.addEventListener('submit', function(e) {
         const form = e.target.closest('.vote-form');
-        if (!form) return;
+        // If the form submitted is NOT a vote form (like the main review form), exit early
+        if (!form) return; 
 
         e.preventDefault();
 
         const url = form.getAttribute('action');
-        const reviewId = form.getAttribute('data-id');
         const formData = new FormData(form);
         const type = formData.get('type');
+        const reviewId = form.getAttribute('data-id');
 
-        // Select the up and down counters for this specific critique/reply
+        // Select specific spans and icons
         const upSpan = document.getElementById(`upvotes-count-${reviewId}`);
         const downSpan = document.getElementById(`downvotes-count-${reviewId}`);
-
         const submitBtn = form.querySelector('button[type="submit"]');
+        
+        // Find icons within the same interaction group
         const parentContainer = form.closest('.d-flex');
         const upIcon = parentContainer.querySelector('.fa-arrow-up');
         const downIcon = parentContainer.querySelector('.fa-arrow-down');
@@ -290,35 +290,24 @@ document.addEventListener('DOMContentLoaded', async function() {
         })
         .then(response => response.json())
         .then(data => {
-        if (data.success) {
-            // Update both counts returned from the Controller
-            if (upSpan) upSpan.innerText = data.upvotes;
-            if (downSpan) downSpan.innerText = data.downvotes;
+            if (data.success) {
+                if (upSpan) upSpan.innerText = data.upvotes;
+                if (downSpan) downSpan.innerText = data.downvotes;
 
-            // Reset both icons to default muted state
-            upIcon.classList.remove('text-primary');
-            downIcon.classList.remove('text-danger');
+                upIcon.classList.remove('text-primary');
+                downIcon.classList.remove('text-danger');
 
-            // If the user currently has an active vote, highlight the correct one
-            if (data.voted) {
-                if (type === 'up') {
-                    upIcon.classList.add('text-primary');
-                } 
-                else if (type === 'down') {
-                    downIcon.classList.add('text-danger');
+                if (data.voted) {
+                    if (type === 'up') upIcon.classList.add('text-primary');
+                    else downIcon.classList.add('text-danger');
                 }
             }
-            }
         })
-        .catch(error => {
-            console.error('Voting Error:', error);
-            alert('Something went wrong. Check the console.');
-        })
+        .catch(error => console.error('Voting Error:', error))
         .finally(() => {
-            // This MUST run to re-enable the button
-            submitBtn.disabled = false; 
+            submitBtn.disabled = false; // This will now always run because we fixed the crash
         });
-    });  // <-- Make sure this closing brace exists and is properly placed
+    });
 });
 </script>
 

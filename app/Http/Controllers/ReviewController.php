@@ -123,9 +123,9 @@ class ReviewController extends Controller
         return back();
     }
     public function vote(Request $request, Review $review) {
-        $type = $request->type; // 'up' or 'down'
+        $type = $request->type;
         $userId = auth()->id();
-        $voted = false; // Track if a vote exists at the end
+        $voted = false;
 
         $existingVote = \App\Models\ReviewVote::where('user_id', $userId)
             ->where('review_id', $review->id)
@@ -135,12 +135,12 @@ class ReviewController extends Controller
             if ($existingVote->type === $type) {
                 $existingVote->delete();
                 $review->decrement($type === 'up' ? 'upvotes' : 'downvotes');
-                $voted = false; // Vote was removed
+                $voted = false;
             } else {
                 $review->decrement($existingVote->type === 'up' ? 'upvotes' : 'downvotes');
                 $existingVote->update(['type' => $type]);
                 $review->increment($type === 'up' ? 'upvotes' : 'downvotes');
-                $voted = true; // Vote was changed
+                $voted = true;
             }
         } else {
             \App\Models\ReviewVote::create([
@@ -149,15 +149,15 @@ class ReviewController extends Controller
                 'type' => $type
             ]);
             $review->increment($type === 'up' ? 'upvotes' : 'downvotes');
-            $voted = true; // New vote added
+            $voted = true;
         }
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
-                'success' => true,
+                'success' => true, // Ensure this matches your JS 'if (data.success)'
                 'voted' => $voted,
-                'upvotes' => $review->upvotes, // JavaScript uses this key
-                'downvotes' => $review->downvotes // JavaScript uses this key
+                'upvotes' => (int) $review->upvotes,
+                'downvotes' => (int) $review->downvotes
             ]);
         }
 
