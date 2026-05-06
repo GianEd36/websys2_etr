@@ -139,6 +139,7 @@
                                 </button>
                             </form>
 
+                            <!-- Downvote Form -->
                             <form action="{{ route('reviews.vote', $review->id) }}" method="POST" class="vote-form d-inline" data-id="{{ $review->id }}">
                                 @csrf
                                 <input type="hidden" name="type" value="down">
@@ -257,46 +258,60 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
     
     document.addEventListener('submit', function(e) {
+        // Look specifically for the vote-form
         const form = e.target.closest('.vote-form');
-        // If the form submitted is NOT a vote form (like the main review form), exit early
+        
+        // If the form being submitted IS NOT a vote form, stop here and let it submit normally
         if (!form) return; 
 
         e.preventDefault();
 
         const url = form.getAttribute('action');
+        const reviewId = form.getAttribute('data-id'); // This is where it was crashing
         const formData = new FormData(form);
         const type = formData.get('type');
-        const reviewId = form.getAttribute('data-id');
 
-        // Select specific spans and icons
+        // Select the counters
         const upSpan = document.getElementById(`upvotes-count-${reviewId}`);
         const downSpan = document.getElementById(`downvotes-count-${reviewId}`);
+
         const submitBtn = form.querySelector('button[type="submit"]');
-        
-        // Find icons within the same interaction group
         const parentContainer = form.closest('.d-flex');
         const upIcon = parentContainer.querySelector('.fa-arrow-up');
         const downIcon = parentContainer.querySelector('.fa-arrow-down');
 
         submitBtn.disabled = true;
 
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
         fetch(url, {
             method: 'POST',
             body: formData,
             headers: {
+                'Accept': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {})
             }
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(body => {
+                    throw new Error(`Voting failed: ${response.status} ${response.statusText} - ${body}`);
+                });
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
+                // Update both counts using the keys from your Controller
                 if (upSpan) upSpan.innerText = data.upvotes;
                 if (downSpan) downSpan.innerText = data.downvotes;
 
+                // Reset colors
                 upIcon.classList.remove('text-primary');
                 downIcon.classList.remove('text-danger');
 
+                // Apply active color
                 if (data.voted) {
                     if (type === 'up') upIcon.classList.add('text-primary');
                     else downIcon.classList.add('text-danger');
@@ -305,7 +320,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         })
         .catch(error => console.error('Voting Error:', error))
         .finally(() => {
-            submitBtn.disabled = false; // This will now always run because we fixed the crash
+            // This will now always run because we prevented the crash
+            submitBtn.disabled = false; 
         });
     });
 });

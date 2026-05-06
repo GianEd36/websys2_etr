@@ -111,19 +111,8 @@ class ReviewController extends Controller
 
         return back()->with('success', 'Reply posted!');
     }
-    public function upvote(Review $review)
-    {
-        $review->increment('upvotes');
-        if (request()->ajax()) {
-            return response()->json([
-                'success' => true,
-                'new_count' => ($type === 'up') ? $review->upvotes : $review->downvotes
-            ]);
-        }
-        return back();
-    }
     public function vote(Request $request, Review $review) {
-        $type = $request->type;
+        $type = $request->type; // 'up' or 'down'
         $userId = auth()->id();
         $voted = false;
 
@@ -133,16 +122,19 @@ class ReviewController extends Controller
 
         if ($existingVote) {
             if ($existingVote->type === $type) {
+                // User clicked the same button again, remove the vote
                 $existingVote->delete();
                 $review->decrement($type === 'up' ? 'upvotes' : 'downvotes');
                 $voted = false;
             } else {
+                // User switched from up to down (or vice versa)
                 $review->decrement($existingVote->type === 'up' ? 'upvotes' : 'downvotes');
                 $existingVote->update(['type' => $type]);
                 $review->increment($type === 'up' ? 'upvotes' : 'downvotes');
                 $voted = true;
             }
         } else {
+            // New vote
             \App\Models\ReviewVote::create([
                 'user_id' => $userId,
                 'review_id' => $review->id,
@@ -152,9 +144,12 @@ class ReviewController extends Controller
             $voted = true;
         }
 
+        // Refresh the model so returned counts reflect the latest database values.
+        $review->refresh();
+
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
-                'success' => true, // Ensure this matches your JS 'if (data.success)'
+                'success' => true,
                 'voted' => $voted,
                 'upvotes' => (int) $review->upvotes,
                 'downvotes' => (int) $review->downvotes
