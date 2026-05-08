@@ -133,6 +133,43 @@
                                 <small class="text-muted">{{ $review->created_at->diffForHumans() }}</small>
                             </div>
                             <span class="badge bg-warning text-dark">★ {{ $review->rating }}/10</span>
+                            <!-- Report Button -->
+                            <div class="dropdown float-end">
+                                <button class="btn btn-link text-muted p-0" type="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <form action="{{ route('reviews.report', $review->id) }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="dropdown-item text-danger">Report Critique</button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                            <!-- Admin Only controls -->
+                            <div class="dropdown float-end">
+                                <button class="btn btn-link text-muted p-0" data-bs-toggle="dropdown">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end bg-dark border-secondary">
+                                    @if(auth()->id() === $review->user_id)
+                                        <li>
+                                            <form action="{{ route('reviews.destroy', $review->id) }}" method="POST">
+                                                @csrf @method('DELETE')
+                                                <button class="dropdown-item text-danger">Delete</button>
+                                            </form>
+                                        </li>
+                                    @else
+                                        <li>
+                                            <form action="{{ route('reviews.report', $review->id) }}" method="POST">
+                                                @csrf
+                                                <button class="dropdown-item text-warning">Report</button>
+                                            </form>
+                                        </li>
+                                    @endif
+                                </ul>
+                            </div>
                         </div>
                         
                         <p class="mt-3 fs-5 mb-3">"{{ $review->comment }}"</p>

@@ -158,4 +158,17 @@ class ReviewController extends Controller
 
         return back();
     }
+    // Add this to your ReviewController class
+    public function report(Review $review)
+    {
+        // Use firstOrCreate to prevent duplicate reports from the same user on the same review
+        \App\Models\Report::firstOrCreate([
+            'user_id' => auth()->id(),
+            'review_id' => $review->id,
+        ], [
+            'reason' => 'Inappropriate Content' // Default reason
+        ]);
+
+        return back()->with('success', 'The critique has been reported to moderators.');
+    }
 }

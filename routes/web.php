@@ -25,6 +25,8 @@ Route::middleware('auth')->group(function () {
     //Upvotes
     //Pivot Table that connects the user and the upvotes system tightly
     Route::post('/reviews/{review}/vote', [ReviewController::class, 'vote'])->name('reviews.vote');
+    //User reporting routes
+    Route::post('/reviews/{review}/report', [ReviewController::class, 'report'])->name('reviews.report');
 
     //Breeze provided routing are these
     Route::get('/dashboard', [DashboardController::class, 'index'])
@@ -37,4 +39,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile/{id}', [ProfileController::class, 'show'])->name('profile.show');
 });
 
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function() {
+    Route::get('/reports', [App\Http\Controllers\AdminController::class, 'index'])->name('reports.index');
+        Route::prefix('admin')->name('admin.')->group(function() {
+        Route::get('/reports', [App\Http\Controllers\AdminController::class, 'index'])->name('reports.index');
+        Route::delete('/reports/{report}', [App\Http\Controllers\AdminController::class, 'dismiss'])->name('reports.dismiss');
+        Route::post('/users/{user}/ban', [App\Http\Controllers\AdminController::class, 'banUser'])->name('users.ban');
+    });
+});
 require __DIR__.'/auth.php';
