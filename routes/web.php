@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\apiController;
 use App\Http\Controllers\DashboardController;
@@ -40,11 +41,10 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function() {
-    Route::get('/reports', [App\Http\Controllers\AdminController::class, 'index'])->name('reports.index');
-        Route::prefix('admin')->name('admin.')->group(function() {
-        Route::get('/reports', [App\Http\Controllers\AdminController::class, 'index'])->name('reports.index');
-        Route::delete('/reports/{report}', [App\Http\Controllers\AdminController::class, 'dismiss'])->name('reports.dismiss');
-        Route::post('/users/{user}/ban', [App\Http\Controllers\AdminController::class, 'banUser'])->name('users.ban');
+    Route::prefix('admin')->name('admin.')->group(function() {
+        Route::get('/reports', [AdminController::class, 'index'])->name('reports.index');
+        Route::delete('/reports/{report}', [AdminController::class, 'dismiss'])->name('reports.dismiss');
+        Route::post('/users/{user}/ban', [AdminController::class, 'banUser'])->name('users.ban');
     });
 });
 require __DIR__.'/auth.php';

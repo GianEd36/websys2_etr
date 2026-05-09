@@ -24,7 +24,7 @@
                     </span>
                 @endif
             </div>
-            <p class="text-muted fs-5">{{ $movie['tagline'] }}</p>
+            <!-- Load the library FIRST -->
             <p class="mt-4">{{ $movie['overview'] }}</p>
             
             @if($trailer)
@@ -125,47 +125,48 @@
             <h3 class="fw-bold mb-4">User Critiques</h3>
             
             @forelse($reviews->where('parent_id', null) as $review)
-                <div class="card border-0 shadow-sm mb-4" style="border-radius: 15px;">
+                <div class="card border-0 shadow-sm mb-4" style="border-radius: 15px;" data-review-id="{{ $review->id }}">
                     <div class="card-body p-4 ">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
                                 <h6 class="fw-bold mb-0 text-info">{{ $review->user->name }}</h6>
                                 <small class="text-muted">{{ $review->created_at->diffForHumans() }}</small>
                             </div>
-                            <span class="badge bg-warning text-dark">★ {{ $review->rating }}/10</span>
-                            <!-- Report Button -->
-                            <div class="dropdown float-end">
+                            <!-- Report Button (opens modal) -->
+                            {{-- <div class="dropdown float-end">
                                 <button class="btn btn-link text-muted p-0" type="button" data-bs-toggle="dropdown">
                                     <i class="fas fa-ellipsis-v"></i>
                                 </button>
                                 <ul class="dropdown-menu">
                                     <li>
-                                        <form action="{{ route('reviews.report', $review->id) }}" method="POST">
-                                            @csrf
-                                            <button type="submit" class="dropdown-item text-danger">Report Critique</button>
-                                        </form>
+                                        <button type="button" class="dropdown-item text-danger open-report-modal" 
+                                            data-action="{{ route('reviews.report', $review->id) }}">
+                                            Report Critique
+                                        </button>
                                     </li>
                                 </ul>
-                            </div>
+                            </div> --}}
                             <!-- Admin Only controls -->
                             <div class="dropdown float-end">
+                                <span class="badge bg-warning text-dark">★ {{ $review->rating }}/10</span>
                                 <button class="btn btn-link text-muted p-0" data-bs-toggle="dropdown">
                                     <i class="fas fa-ellipsis-v"></i>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end bg-dark border-secondary">
                                     @if(auth()->id() === $review->user_id)
                                         <li>
-                                            <form action="{{ route('reviews.destroy', $review->id) }}" method="POST">
-                                                @csrf @method('DELETE')
-                                                <button class="dropdown-item text-danger">Delete</button>
-                                            </form>
+                                            <button type="button" class="dropdown-item text-danger open-delete-modal"
+                                                data-action="{{ route('reviews.destroy', $review->id) }}"
+                                                data-review-id="{{ $review->id }}">
+                                                Delete
+                                            </button>
                                         </li>
                                     @else
                                         <li>
-                                            <form action="{{ route('reviews.report', $review->id) }}" method="POST">
-                                                @csrf
-                                                <button class="dropdown-item text-warning">Report</button>
-                                            </form>
+                                            <button type="button" class="dropdown-item text-warning open-report-modal"
+                                                data-action="{{ route('reviews.report', $review->id) }}">
+                                                Report
+                                            </button>
                                         </li>
                                     @endif
                                 </ul>
@@ -253,6 +254,54 @@
     </div>
 </div>
 @endsection
+
+<!-- Report Modal -->
+<div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-secondary">
+            <div class="modal-header">
+                <h5 class="modal-title">Report Critique</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="reportModalForm" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small text-muted">Reason</label>
+                        <textarea name="reason" class="form-control" rows="4" placeholder="Explain why you're reporting this critique" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Submit Report</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-secondary">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Critique</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="deleteModalForm" method="POST">
+                @csrf
+                @method('DELETE')
+                <div class="modal-body">
+                    <p>Are you sure you want to delete your critique? This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 <!-- Load the library FIRST -->
 <script src="https://cdn.jsdelivr.net/npm/emoji-mart@5.5.2/dist/browser.js"></script>
 <script>
@@ -417,6 +466,219 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
 });
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Report modal buttons
+    const reportButtons = document.querySelectorAll('.open-report-modal');
+    const deleteButtons = document.querySelectorAll('.open-delete-modal');
+
+    // Ensure toast container exists (append to body to avoid layout issues)
+    const getToastContainer = () => {
+        let tc = document.getElementById('toast-container');
+        if (tc) return tc;
+        tc = document.createElement('div');
+        tc.id = 'toast-container';
+        tc.className = 'toast-container position-fixed top-0 end-0 p-3';
+        tc.setAttribute('aria-live', 'polite');
+        tc.setAttribute('aria-atomic', 'true');
+        // High z-index so it rises above sidebars/overlays
+        tc.style.zIndex = 200000;
+        // allow clicks to pass through the page except on toasts themselves
+        tc.style.pointerEvents = 'none';
+        document.body.appendChild(tc);
+        return tc;
+    };
+    const reportModalEl = document.getElementById('reportModal');
+    const deleteModalEl = document.getElementById('deleteModal');
+    if (reportModalEl) {
+        const reportModal = new bootstrap.Modal(reportModalEl);
+        const reportForm = document.getElementById('reportModalForm');
+        reportButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (btn.dataset.action && reportForm) reportForm.action = btn.dataset.action;
+                reportModal.show();
+            });
+        });
+        // AJAX submit for report form
+        if (reportForm) {
+            reportForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const submitBtn = reportForm.querySelector('button[type="submit"]');
+                const formData = new FormData(reportForm);
+                const action = reportForm.getAttribute('action');
+                if (!action) return console.warn('Report form action not set.');
+                submitBtn.disabled = true;
+
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+                fetch(action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {})
+                    }
+                })
+                .then(async res => {
+                    const contentType = res.headers.get('content-type') || '';
+                    let data = null;
+                    if (contentType.includes('application/json')) {
+                        data = await res.json();
+                    } else {
+                        // Don't capture full HTML responses into the toast message
+                        // (server may redirect or return a blade view). Use a safe fallback.
+                        data = { message: null };
+                    }
+
+                    if (!res.ok) {
+                        const msg = (data && data.message) ? data.message : (res.statusText || 'Failed to submit report.');
+                        throw { status: res.status, message: msg, data };
+                    }
+                    return data;
+                })
+                .then(data => {
+                    // success - close modal and show toast
+                    reportModal.hide();
+                    const toastContainer = getToastContainer();
+                    const toastEl = document.createElement('div');
+                    toastEl.className = 'toast mb-2 align-items-center bg-success border-0';
+                    toastEl.setAttribute('role', 'alert');
+                    toastEl.setAttribute('aria-live', 'assertive');
+                    toastEl.setAttribute('aria-atomic', 'true');
+                    // enable pointer events on the toast itself (so close button works)
+                    toastEl.style.pointerEvents = 'auto';
+                    toastEl.innerHTML = `<div class="d-flex"><div class="toast-body text-white">${(data.message || 'Report submitted.')}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>`;
+                    toastContainer.appendChild(toastEl);
+                    const toast = new bootstrap.Toast(toastEl, { delay: 3500, autohide: true });
+                    toast.show();
+                    toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+                })
+                .catch(err => {
+                    // show error(s) via toast
+                    let msg = 'Failed to submit report.';
+                    if (err && err.data) {
+                        if (err.data.errors) {
+                            msg = Object.values(err.data.errors).flat().join(' ');
+                        } else if (err.data.message) msg = err.data.message;
+                    } else if (err && err.message) msg = err.message;
+
+                    const toastContainer = getToastContainer();
+                    const toastEl = document.createElement('div');
+                    toastEl.className = 'toast mb-2 align-items-center bg-danger border-0';
+                    toastEl.setAttribute('role', 'alert');
+                    toastEl.setAttribute('aria-live', 'assertive');
+                    toastEl.setAttribute('aria-atomic', 'true');
+                    toastEl.style.pointerEvents = 'auto';
+                    toastEl.innerHTML = `<div class="d-flex"><div class="toast-body text-white">${msg}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>`;
+                    toastContainer.appendChild(toastEl);
+                    const toast = new bootstrap.Toast(toastEl, { delay: 5000, autohide: true });
+                    toast.show();
+                    toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+                })
+                .finally(() => {
+                    submitBtn.disabled = false;
+                    // clear textarea after submit
+                    reportForm.querySelector('textarea[name="reason"]').value = '';
+                });
+            });
+        }
+    }
+
+    if (deleteModalEl) {
+        const deleteModal = new bootstrap.Modal(deleteModalEl);
+        const deleteForm = document.getElementById('deleteModalForm');
+        deleteButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (btn.dataset.action && deleteForm) deleteForm.action = btn.dataset.action;
+                // pass review id so we can remove the node after successful delete
+                if (btn.dataset.reviewId && deleteForm) deleteForm.dataset.reviewId = btn.dataset.reviewId;
+                deleteModal.show();
+            });
+        });
+
+        // AJAX submit for delete form
+        if (deleteForm) {
+            deleteForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const submitBtn = deleteForm.querySelector('button[type="submit"]');
+                const action = deleteForm.getAttribute('action');
+                const reviewId = deleteForm.dataset.reviewId;
+                if (!action) return console.warn('Delete form action not set.');
+                submitBtn.disabled = true;
+
+                const formData = new FormData(deleteForm);
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+                fetch(action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {})
+                    }
+                })
+                .then(async res => {
+                    const ct = res.headers.get('content-type') || '';
+                    let data = null;
+                    if (ct.includes('application/json')) {
+                        data = await res.json();
+                    } else {
+                        // Avoid storing full HTML responses (redirects/views) in the toast
+                        data = { message: null };
+                    }
+                    if (!res.ok) throw { status: res.status, data };
+                    return data;
+                })
+                .then(data => {
+                    deleteModal.hide();
+                    // remove review node
+                    if (reviewId) {
+                        const node = document.querySelector(`[data-review-id="${reviewId}"]`);
+                        if (node) node.remove();
+                    }
+                    // show toast
+                    const tc = getToastContainer();
+                    const toastEl = document.createElement('div');
+                    toastEl.className = 'toast mb-2 align-items-center bg-success border-0';
+                    toastEl.setAttribute('role', 'alert');
+                    toastEl.setAttribute('aria-live', 'assertive');
+                    toastEl.setAttribute('aria-atomic', 'true');
+                    toastEl.style.pointerEvents = 'auto';
+                    toastEl.innerHTML = `<div class="d-flex"><div class="toast-body text-white">${(data.message || 'Critique deleted.')}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>`;
+                    tc.appendChild(toastEl);
+                    const toast = new bootstrap.Toast(toastEl, { delay: 3000, autohide: true });
+                    toast.show();
+                    toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+                })
+                .catch(err => {
+                    let msg = 'Failed to delete.';
+                    if (err && err.data) {
+                        if (err.data.errors) msg = Object.values(err.data.errors).flat().join(' ');
+                        else if (err.data.message) msg = err.data.message;
+                    }
+                    const tc = getToastContainer();
+                    const toastEl = document.createElement('div');
+                    toastEl.className = 'toast mb-2 align-items-center bg-danger border-0';
+                    toastEl.setAttribute('role', 'alert');
+                    toastEl.setAttribute('aria-live', 'assertive');
+                    toastEl.setAttribute('aria-atomic', 'true');
+                    toastEl.style.pointerEvents = 'auto';
+                    toastEl.innerHTML = `<div class="d-flex"><div class="toast-body text-white">${msg}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>`;
+                    tc.appendChild(toastEl);
+                    const toast = new bootstrap.Toast(toastEl, { delay: 5000, autohide: true });
+                    toast.show();
+                    toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+                })
+                .finally(() => {
+                    submitBtn.disabled = false;
+                });
+            });
+        }
+    }
+});
+</script>
 
 <style>
     .emoji-picker-global {
@@ -431,5 +693,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     /* Standardizes the context for main and reply forms */
     .position-relative { 
         position: relative !important; 
+    }
+
+    /* Toast appearance tweaks */
+    #toast-container .toast {
+        max-width: 360px;
+        border-radius: .6rem;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.28);
     }
 </style>
