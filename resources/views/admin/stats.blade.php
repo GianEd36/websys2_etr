@@ -2,18 +2,20 @@
 @section('content')
 <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-white">Movies Statistics</h2>
+        <h2 class="text-body">Movies Statistics</h2>
         <div>
-            <a href="{{ route('admin.reports.index') }}" class="btn btn-sm btn-outline-light">Reports</a>
-            <a href="{{ route('admin.appeals.index') }}" class="btn btn-sm btn-outline-light">Appeals</a>
+            <a href="{{ route('admin.reports.index') }}" class="btn btn-sm btn-primary">Reports</a>
+            <a href="{{ route('admin.appeals.index') }}" class="btn btn-sm btn-primary">Appeals</a>
         </div>
     </div>
 
     <form method="GET" class="row g-2 mb-4">
         <div class="col-auto">
+            <label for="start_date">From: </label>
             <input type="date" name="start_date" class="form-control form-control-sm" value="{{ $start ?? '' }}">
         </div>
         <div class="col-auto">
+            <label for="start_date">To: </label>
             <input type="date" name="end_date" class="form-control form-control-sm" value="{{ $end ?? '' }}">
         </div>
         <div class="col-auto">
@@ -23,10 +25,10 @@
 
     <div class="row g-4">
         <div class="col-md-6">
-            <div class="card bg-dark border-secondary">
+            <div class="card border-secondary">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="text-white mb-0">Most Viewed</h5>
+                        <h5 class="text-body mb-0">Most Viewed</h5>
                         <div class="ms-2 d-flex">
                             <select class="form-select form-select-sm chart-type-selector me-2" data-chart="chartMostViewed">
                                 <option value="bar" selected>Bar</option>
@@ -56,16 +58,33 @@
                             <li class="list-group-item bg-transparent border-secondary">No data</li>
                         @endforelse
                     </ul>
-                    <div class="mt-2">{!! $mostViewed->appends(request()->query())->links('pagination::bootstrap-5') !!}</div>
+                    <div class="mt-2">
+                        @php $p = $mostViewed; $pname = 'mv_page'; @endphp
+                        @if($p->lastPage() > 1)
+                        <nav aria-label="Most viewed pages">
+                            <ul class="pagination pagination-sm">
+                                <li class="page-item {{ $p->currentPage() <= 1 ? 'disabled' : '' }}">
+                                    <a class="page-link" href="{{ request()->fullUrlWithQuery([$pname => max(1, $p->currentPage()-1)]) }}">&lsaquo;</a>
+                                </li>
+                                @for($i=1;$i<=$p->lastPage();$i++)
+                                    <li class="page-item {{ $p->currentPage()==$i ? 'active' : '' }}"><a class="page-link" href="{{ request()->fullUrlWithQuery([$pname => $i]) }}">{{ $i }}</a></li>
+                                @endfor
+                                <li class="page-item {{ $p->currentPage() >= $p->lastPage() ? 'disabled' : '' }}">
+                                    <a class="page-link" href="{{ request()->fullUrlWithQuery([$pname => min($p->lastPage(), $p->currentPage()+1)]) }}">&rsaquo;</a>
+                                </li>
+                            </ul>
+                        </nav>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="col-md-6">
-            <div class="card bg-dark border-secondary">
+            <div class="card border-secondary">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="text-white mb-0">Critic's Choice (Top Avg Rating)</h5>
+                        <h5 class="text-body mb-0">Critic's Choice (Top Avg Rating)</h5>
                         <div class="ms-2 d-flex">
                             <select class="form-select form-select-sm chart-type-selector me-2" data-chart="chartCritics">
                                 <option value="bar" selected>Bar</option>
@@ -95,16 +114,33 @@
                             <li class="list-group-item bg-transparent border-secondary">No data</li>
                         @endforelse
                     </ul>
-                    <div class="mt-2">{!! $criticsChoice->appends(request()->query())->links('pagination::bootstrap-5') !!}</div>
+                    <div class="mt-2">
+                        @php $p = $criticsChoice; $pname = 'cc_page'; @endphp
+                        @if($p->lastPage() > 1)
+                        <nav aria-label="Critics choice pages">
+                            <ul class="pagination pagination-sm">
+                                <li class="page-item {{ $p->currentPage() <= 1 ? 'disabled' : '' }}">
+                                    <a class="page-link" href="{{ request()->fullUrlWithQuery([$pname => max(1, $p->currentPage()-1)]) }}">&lsaquo;</a>
+                                </li>
+                                @for($i=1;$i<=$p->lastPage();$i++)
+                                    <li class="page-item {{ $p->currentPage()==$i ? 'active' : '' }}"><a class="page-link" href="{{ request()->fullUrlWithQuery([$pname => $i]) }}">{{ $i }}</a></li>
+                                @endfor
+                                <li class="page-item {{ $p->currentPage() >= $p->lastPage() ? 'disabled' : '' }}">
+                                    <a class="page-link" href="{{ request()->fullUrlWithQuery([$pname => min($p->lastPage(), $p->currentPage()+1)]) }}">&rsaquo;</a>
+                                </li>
+                            </ul>
+                        </nav>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="col-md-6">
-            <div class="card bg-dark border-secondary">
+            <div class="card border-secondary">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="text-white mb-0">Most Critiqued</h5>
+                        <h5 class="text-body mb-0">Most Critiqued</h5>
                         <div class="ms-2 d-flex">
                             <select class="form-select form-select-sm chart-type-selector me-2" data-chart="chartCritiqued">
                                 <option value="bar" selected>Bar</option>
@@ -134,16 +170,33 @@
                             <li class="list-group-item bg-transparent border-secondary">No data</li>
                         @endforelse
                     </ul>
-                    <div class="mt-2">{!! $mostCritiqued->appends(request()->query())->links('pagination::bootstrap-5') !!}</div>
+                    <div class="mt-2">
+                        @php $p = $mostCritiqued; $pname = 'mc_page'; @endphp
+                        @if($p->lastPage() > 1)
+                        <nav aria-label="Most critiqued pages">
+                            <ul class="pagination pagination-sm">
+                                <li class="page-item {{ $p->currentPage() <= 1 ? 'disabled' : '' }}">
+                                    <a class="page-link" href="{{ request()->fullUrlWithQuery([$pname => max(1, $p->currentPage()-1)]) }}">&lsaquo;</a>
+                                </li>
+                                @for($i=1;$i<=$p->lastPage();$i++)
+                                    <li class="page-item {{ $p->currentPage()==$i ? 'active' : '' }}"><a class="page-link" href="{{ request()->fullUrlWithQuery([$pname => $i]) }}">{{ $i }}</a></li>
+                                @endfor
+                                <li class="page-item {{ $p->currentPage() >= $p->lastPage() ? 'disabled' : '' }}">
+                                    <a class="page-link" href="{{ request()->fullUrlWithQuery([$pname => min($p->lastPage(), $p->currentPage()+1)]) }}">&rsaquo;</a>
+                                </li>
+                            </ul>
+                        </nav>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="col-md-6">
-            <div class="card bg-dark border-secondary">
+            <div class="card border-secondary">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="text-white mb-0">Most Engaging</h5>
+                        <h5 class="text-body mb-0">Most Engaging</h5>
                         <div class="ms-2 d-flex">
                             <select class="form-select form-select-sm chart-type-selector me-2" data-chart="chartEngaging">
                                 <option value="bar" selected>Bar</option>
@@ -176,7 +229,24 @@
                             <li class="list-group-item bg-transparent border-secondary">No data</li>
                         @endforelse
                     </ul>
-                    <div class="mt-2">{!! $mostEngaging->appends(request()->query())->links('pagination::bootstrap-5') !!}</div>
+                    <div class="mt-2">
+                        @php $p = $mostEngaging; $pname = 'me_page'; @endphp
+                        @if($p->lastPage() > 1)
+                        <nav aria-label="Most engaging pages">
+                            <ul class="pagination pagination-sm">
+                                <li class="page-item {{ $p->currentPage() <= 1 ? 'disabled' : '' }}">
+                                    <a class="page-link" href="{{ request()->fullUrlWithQuery([$pname => max(1, $p->currentPage()-1)]) }}">&lsaquo;</a>
+                                </li>
+                                @for($i=1;$i<=$p->lastPage();$i++)
+                                    <li class="page-item {{ $p->currentPage()==$i ? 'active' : '' }}"><a class="page-link" href="{{ request()->fullUrlWithQuery([$pname => $i]) }}">{{ $i }}</a></li>
+                                @endfor
+                                <li class="page-item {{ $p->currentPage() >= $p->lastPage() ? 'disabled' : '' }}">
+                                    <a class="page-link" href="{{ request()->fullUrlWithQuery([$pname => min($p->lastPage(), $p->currentPage()+1)]) }}">&rsaquo;</a>
+                                </li>
+                            </ul>
+                        </nav>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>

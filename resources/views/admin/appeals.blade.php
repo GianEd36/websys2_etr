@@ -2,14 +2,14 @@
 @section('content')
 <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-white">Appeals</h2>
+        <h2 class="text-body">Appeals</h2>
         <div class="btn-group">
-            <a href="{{ route('admin.movies.stats') }}" class="btn btn-sm btn-outline-light">Statistics</a>
-            <a href="{{ route('admin.reports.index') }}" class="btn btn-sm btn-outline-light">Back to Reports</a>
+            <a href="{{ route('admin.movies.stats') }}" class="btn btn-sm btn-primary">Statistics</a>
+            <a href="{{ route('admin.reports.index') }}" class="btn btn-sm btn-primary">Back to Reports</a>
         </div>
     </div>
 
-    <table class="table table-dark table-hover">
+    <table class="table table-hover">
         <thead>
             <tr>
                 <th>User</th>
