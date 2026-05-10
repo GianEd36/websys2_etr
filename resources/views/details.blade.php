@@ -114,6 +114,13 @@
                 Please <a href="{{ route('login') }}" class="fw-bold">Login</a> to leave a critique.
             </div>
             @endauth
+            @if(request()->query('admin_return') && auth()->check() && auth()->user()->is_admin)
+            <div class="mt-3">
+                <a href="{{ request()->query('admin_return') }}" class="btn btn-sm btn-outline-light">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Reports
+                </a>
+            </div>
+            @endif
         </div>
     </div>
 
@@ -125,7 +132,7 @@
             <h3 class="fw-bold mb-4">User Critiques</h3>
             
             @forelse($reviews->where('parent_id', null) as $review)
-                <div class="card border-0 shadow-sm mb-4" style="border-radius: 15px;" data-review-id="{{ $review->id }}">
+                <div id="review-{{ $review->id }}" class="card border-0 shadow-sm mb-4" style="border-radius: 15px;" data-review-id="{{ $review->id }}">
                     <div class="card-body p-4 ">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
@@ -466,6 +473,25 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
 });
 </script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        const hash = window.location.hash || '';
+        if (hash.startsWith('#review-')) {
+            const el = document.querySelector(hash);
+            if (el) {
+                // smooth scroll to element and highlight
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.classList.add('admin-highlight');
+                setTimeout(() => el.classList.remove('admin-highlight'), 4000);
+            }
+        }
+    } catch (e) {
+        console.warn('Auto-scroll to review failed:', e);
+    }
+});
+</script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Report modal buttons
@@ -700,5 +726,17 @@ document.addEventListener('DOMContentLoaded', function() {
         max-width: 360px;
         border-radius: .6rem;
         box-shadow: 0 6px 18px rgba(0,0,0,0.28);
+    }
+
+    /* Admin highlight when jumping from reports */
+    .admin-highlight {
+        animation: adminPulse 1s ease-in-out 0s 3;
+        box-shadow: 0 8px 24px rgba(255,193,7,0.25);
+        border: 2px solid rgba(255,193,7,0.9) !important;
+    }
+    @keyframes adminPulse {
+        0% { background-color: rgba(255,193,7,0.08); }
+        50% { background-color: rgba(255,193,7,0.18); }
+        100% { background-color: transparent; }
     }
 </style>

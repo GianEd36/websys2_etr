@@ -117,10 +117,15 @@
                             <a class="nav-link dropdown-toggle text-body-emphasis" href="#" role="button" data-bs-toggle="dropdown">
                                 {{ Auth::user()->name }}
                             </a>
-                            <ul class="dropdown-menu dropdown-menu-end shadow">
+                                <ul class="dropdown-menu dropdown-menu-end shadow">
                                 {{-- Add this line below --}}
                                 <li><a class="dropdown-item" href="{{ route('profile.show', Auth::user()->id) }}">Profile</a></li>
-                                
+
+                                @if(Auth::user()->is_admin)
+                                    <li><a class="dropdown-item" href="{{ route('admin.reports.index') }}">Admin Panel</a></li>
+                                    <li><a class="dropdown-item" href="{{ route('admin.movies.stats') }}">Statistics</a></li>
+                                @endif
+
                                 <li><a class="dropdown-item" href="{{ route('dashboard') }}">My Reviews</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
@@ -146,15 +151,17 @@
         const icon = document.getElementById('themeIcon');
         const html = document.documentElement;
 
-        btn.addEventListener('click', () => {
-            if (html.getAttribute('data-bs-theme') === 'dark') {
-                html.setAttribute('data-bs-theme', 'light');
-                icon.classList.replace('fa-moon', 'fa-sun');
-            } else {
-                html.setAttribute('data-bs-theme', 'dark');
-                icon.classList.replace('fa-sun', 'fa-moon');
-            }
-        });
+        if (btn) {
+            btn.addEventListener('click', () => {
+                if (html.getAttribute('data-bs-theme') === 'dark') {
+                    html.setAttribute('data-bs-theme', 'light');
+                    if (icon) icon.classList.replace('fa-moon', 'fa-sun');
+                } else {
+                    html.setAttribute('data-bs-theme', 'dark');
+                    if (icon) icon.classList.replace('fa-sun', 'fa-moon');
+                }
+            });
+        }
         (function () {
             const savedTheme = localStorage.getItem('theme') || 'dark';
             document.documentElement.setAttribute('data-bs-theme', savedTheme);
@@ -176,5 +183,6 @@
             }
         }
     </script>
+    @stack('scripts')
 </body>
 </html>

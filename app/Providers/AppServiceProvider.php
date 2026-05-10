@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Auth\Events\Login;
+use App\Listeners\SetSessionTokenOnLogin;
 use App\Models\Genre;
 
 class AppServiceProvider extends ServiceProvider
@@ -23,6 +26,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Ensure a session token is set on login so we can invalidate sessions when needed
+        Event::listen(Login::class, function ($event) {
+            (new SetSessionTokenOnLogin())->handle($event);
+        });
+
         View::composer('layouts.app', function ($view) {
                 $genres = cache()->remember('movie_genres', 86400, function () {
                     return [

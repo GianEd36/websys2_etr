@@ -159,15 +159,32 @@ class ReviewController extends Controller
         return back();
     }
     // Add this to your ReviewController class
-    public function report(Review $review)
+    public function report(Request $request, Review $review)
     {
-        // Use firstOrCreate to prevent duplicate reports from the same user on the same review
-        \App\Models\Report::firstOrCreate([
+        $request->validate([
+            'reason' => 'nullable|string|max:1000'
+        ]);
+
+        // Create or get existing report for this user+review
+        $report = \App\Models\Report::firstOrCreate([
             'user_id' => auth()->id(),
             'review_id' => $review->id,
         ], [
-            'reason' => 'Inappropriate Content' // Default reason
+            'reason' => $request->input('reason', 'Inappropriate Content')
         ]);
+
+        // If a reason was provided and the report already existed, update it
+        if ($request->filled('reason') && $report->reason !== $request->input('reason')) {
+            $report->reason = $request->input('reason');
+            $report->save();
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'The critique has been reported to moderators.'
+            ]);
+        }
 
         return back()->with('success', 'The critique has been reported to moderators.');
     }
