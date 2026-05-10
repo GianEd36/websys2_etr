@@ -137,8 +137,23 @@ class apiController extends Controller
            ?? collect($movie['videos']['results'])->first(); // Fallback to any video if no trailer
 
         // Movie Views Logic
-        $viewRecord = \App\Models\MovieView::firstOrCreate(['movie_id' => $id]);
-        $viewRecord->increment('views');
+        // Persist movie_title when creating/updating MovieView so charts can use titles
+        $viewRecord = \App\Models\MovieView::firstOrNew(['movie_id' => $id]);
+        // Use TMDB response title when available
+        $tmdbTitle = isset($movie['title']) ? $movie['title'] : (isset($movie['name']) ? $movie['name'] : null);
+        if (!$viewRecord->exists) {
+            // New record: set title and initial count
+            if ($tmdbTitle) $viewRecord->movie_title = $tmdbTitle;
+            $viewRecord->views = 1;
+            $viewRecord->save();
+        } else {
+            // Existing: persist title if missing, then increment
+            if (empty($viewRecord->movie_title) && $tmdbTitle) {
+                $viewRecord->movie_title = $tmdbTitle;
+                $viewRecord->save();
+            }
+            $viewRecord->increment('views');
+        }
         $viewCount = $viewRecord->views; // Pass to the view
 
         $reviews = \App\Models\Review::where('movie_id', $id)

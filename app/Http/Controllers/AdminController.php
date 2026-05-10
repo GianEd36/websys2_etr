@@ -158,25 +158,25 @@ class AdminController extends Controller
 
         // Prepare small datasets for charts (top 10 overall, ignoring pagination)
         // Ensure each item exposes a `label` property (movie title when available, otherwise movie id)
-        $chartMostViewed = $mostViewedCollection->take(10)->map(function($m){
+        $chartMostViewed = $mostViewedCollection->take(20)->map(function($m){
             $label = trim((string)($m->movie_title ?? '')) ?: (string)($m->movie_id ?? '');
             $m->label = $label;
             return $m;
         });
 
-        $chartCritics = $criticsChoiceCollection->take(10)->map(function($m){
+        $chartCritics = $criticsChoiceCollection->take(20)->map(function($m){
             $label = trim((string)($m->movie_title ?? '')) ?: (string)($m->movie_id ?? '');
             $m->label = $label;
             return $m;
         });
 
-        $chartCritiqued = $mostCritiquedCollection->take(10)->map(function($m){
+        $chartCritiqued = $mostCritiquedCollection->take(20)->map(function($m){
             $label = trim((string)($m->movie_title ?? '')) ?: (string)($m->movie_id ?? '');
             $m->label = $label;
             return $m;
         });
 
-        $chartEngaging = $mostEngagingCollection->take(10)->map(function($m){
+        $chartEngaging = $mostEngagingCollection->take(20)->map(function($m){
             $label = trim((string)($m->movie_title ?? '')) ?: (string)($m->movie_id ?? '');
             $m->label = $label;
             return $m;
