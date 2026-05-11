@@ -41,6 +41,10 @@
                 type="button" data-bs-toggle="collapse" data-bs-target="#replyForm{{ $reply->id }}">
             <i class="fas fa-reply me-1"></i>Reply
         </button>
+        <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 text-danger open-report-modal ms-3"
+                data-action="{{ route('reviews.report', $reply->id) }}">
+            <i class="fas fa-flag me-1"></i>Report
+        </button>
     </div>
 
     <!-- UPDATED: Nested Reply Form with Image & Emoji support -->
